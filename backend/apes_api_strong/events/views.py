@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from events.serializers.event_serializer import EventSerializer
 import openai
 from django.conf import settings
+from events.middlewares import get_distance
+from rest_framework.response import Response
 
 from users.models import Personality
 # Create your views here.
@@ -40,6 +42,49 @@ class EventViewSet(viewsets.ModelViewSet):
         suggested_codes = response.choices[0].message.content
         codes_list = [code.strip() for code in suggested_codes.split(",")]
 
-        # ustawiamy relacje ManyToMany
         personalities = Personality.objects.filter(code__in=codes_list)
         event.personality.set(personalities)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        lat = self.request.query_params.get("lat")
+        lon = self.request.query_params.get("lon")
+        max_distance = self.request.query_params.get("distance", 10)  # domyślnie 10 km
+
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+
+        personality_type = self.request.query_params.get("personality_type")
+
+        tags = self.request.query_params.getlist("tags")
+
+        if lat and lon:
+            try:
+                lat = float(lat)
+                lon = float(lon)
+                max_distance = float(max_distance)
+            except ValueError:
+                return queryset.none()
+
+            filtered_events = [event for event in queryset 
+                            if get_distance(lat, lon, event.latitude, event.longitude) <= max_distance]
+            return filtered_events
+        
+        if start_date:
+            print(start_date)
+            queryset = queryset.filter(date__gte=start_date)
+        if end_date:
+            print(end_date)
+            queryset = queryset.filter(date__lte=end_date)
+        
+        if personality_type:
+            queryset = queryset.filter(personality__id=personality_type)
+
+        if tags:
+            queryset = queryset.filter(tags__id__in=tags).distinct()
+
+
+        return queryset
+
+
