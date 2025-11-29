@@ -120,6 +120,7 @@ export default function MapClient() {
         if (!start) return;
         const dx = Math.abs(e.originalEvent.clientX - start.x);
         const dy = Math.abs(e.originalEvent.clientY - start.y);
+
         if (dx < 5 && dy < 5) {
           const { lat, lng } = e.latlng;
           onClick([lat, lng]);
@@ -140,6 +141,33 @@ export default function MapClient() {
     return null;
   }
 
+  function MapBoundsListener({
+    onChange,
+  }: {
+    onChange: (bounds: any) => void;
+  }) {
+    const map = useMap();
+
+    useEffect(() => {
+      const update = () => {
+        const b = map.getBounds();
+        onChange(b);
+      };
+
+      map.on("moveend", update);
+      map.on("zoomend", update);
+
+      update();
+
+      return () => {
+        map.off("moveend", update);
+        map.off("zoomend", update);
+      };
+    }, [map, onChange]);
+
+    return null;
+  }
+
   return (
     <div className="h-full w-full">
       <MapContainer
@@ -153,17 +181,22 @@ export default function MapClient() {
         <Marker position={DEFAULT_CENTER}>
           <Popup>Here be Apes 🐒</Popup>
         </Marker>
+        <MapClickHandler
+          onClick={(latlng) => {
+            console.log("Map clicked at:", latlng);
+          }}
+        />
+        <MapBoundsListener
+          onChange={(bounds) => {
+            console.log("Map bounds changed:", bounds);
+          }}
+        />
         {userPos && (
           <>
             <Marker position={userPos}>
               <Popup>Your location 📍</Popup>
             </Marker>
             <RecenterOnUser position={userPos} />
-            <MapClickHandler
-              onClick={(latlng) => {
-                console.log("Map clicked at:", latlng);
-              }}
-            />
           </>
         )}
       </MapContainer>
