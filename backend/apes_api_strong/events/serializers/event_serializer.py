@@ -3,6 +3,10 @@ from rest_framework import serializers
 from users.models import Tag, Personality
 
 class EventSerializer(serializers.ModelSerializer):
+
+    organizer = serializers.PrimaryKeyRelatedField(
+        read_only=True, default=serializers.CurrentUserDefault(), required=False
+    )
     tags = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Tag.objects.all(), required=False
     )

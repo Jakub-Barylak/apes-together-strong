@@ -52,17 +52,13 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
             model="gpt-4",
             messages=[
                 {"role": "system", "content": f"""You are an expert tag suggestion assistant. You are given a fixed list of available tags and a description of a user's interests. 
-Your job is to select which tags from the available list match the user's description. 
-- Only use tags from the provided list. 
-- Do not invent new tags. 
-- Your output must be a comma-separated list of tag names, with no extra text.
-- Remove duplicates and ignore case differences.
+                    Your job is to select which tags from the available list match the user's description. 
+                    - Only use tags from the provided list. 
+                    - Do not invent new tags. 
+                    - Your output must be a comma-separated list of tag names, with no extra text.
+                    - Remove duplicates and ignore case differences.
                 """},
-                {"role": "user", "content": f"""Available tags: {tags_str}
-
-                User description: "{user_text}"
-
-Select matching tags:"""}
+                {"role": "user", "content": f"""Available tags: {tags_str} User description: "{user_text}" Select matching tags:"""}
             ],
             max_tokens=50
         )
