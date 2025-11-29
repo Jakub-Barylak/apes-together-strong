@@ -1,4 +1,4 @@
-from requests import Response
+from rest_framework.response import Response
 from apes_api_strong import settings
 from rest_framework import viewsets
 from django.contrib.auth import get_user_model
