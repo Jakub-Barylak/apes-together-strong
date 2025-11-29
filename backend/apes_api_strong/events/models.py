@@ -11,7 +11,7 @@ class Event(models.Model):
     longitude = models.FloatField()
     location_name = models.CharField(max_length=200)
     tags = models.ManyToManyField(Tag, blank=True)
-    organizer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="events")
+    organizer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="organized_events")
     personality = models.ManyToManyField(Personality, blank=True)
 
 
