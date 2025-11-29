@@ -51,3 +51,8 @@ poetry.lock
 .pytest_cache/
 
 db.sqlite3
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
