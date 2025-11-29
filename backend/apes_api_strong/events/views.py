@@ -48,6 +48,11 @@ class EventViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         
+        lat_max = float(self.request.query_params.get("n"))
+        lon_max = float(self.request.query_params.get("e"))
+        lat_min = float(self.request.query_params.get("s"))
+        lon_min = float(self.request.query_params.get("w"))
+
         lat = self.request.query_params.get("lat")
         lon = self.request.query_params.get("lon")
         max_distance = self.request.query_params.get("distance", 10)  # domyślnie 10 km
@@ -84,6 +89,8 @@ class EventViewSet(viewsets.ModelViewSet):
         if tags:
             queryset = queryset.filter(tags__id__in=tags).distinct()
 
+        if lat_max is not None and lon_max is not None and lat_min is not None and lon_min is not None:
+            queryset = queryset.filter(latitude__gte=lat_min, latitude__lte=lat_max, longitude__gte=lon_min, longitude__lte=lon_max)
 
         return queryset
 
