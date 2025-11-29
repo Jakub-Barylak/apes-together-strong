@@ -1,0 +1,18 @@
+PERSONALITY_CHOICES = [
+        ("INTJ", "Architect (INTJ)"),
+        ("INTP", "Logician (INTP)"),
+        ("ENTJ", "Commander (ENTJ)"),
+        ("ENTP", "Debater (ENTP)"),
+        ("INFJ", "Advocate (INFJ)"),
+        ("INFP", "Mediator (INFP)"),
+        ("ENFJ", "Protagonist (ENFJ)"),
+        ("ENFP", "Campaigner (ENFP)"),
+        ("ISTJ", "Logistician (ISTJ)"),
+        ("ISFJ", "Defender (ISFJ)"),
+        ("ESTJ", "Executive (ESTJ)"),
+        ("ESFJ", "Consul (ESFJ)"),
+        ("ISTP", "Virtuoso (ISTP)"),
+        ("ISFP", "Adventurer (ISFP)"),
+        ("ESTP", "Entrepreneur (ESTP)"),
+        ("ESFP", "Entertainer (ESFP)"),
+    ]
