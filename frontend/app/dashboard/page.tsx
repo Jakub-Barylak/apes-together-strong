@@ -1,4 +1,5 @@
 import Card from "@/components/card";
+import MapClient from "@/components/mapClient";
 
 export default function DashboardPage() {
   return (
@@ -37,7 +38,9 @@ export default function DashboardPage() {
         </h2>
         EVENTS NEARBY LIST
       </main>
-      <div>MAP HERE</div>
+      <div className="w-full h-full overflow-hidden bg-slate-900/60 backdrop-blur-xl border border-slate-700">
+        <MapClient />
+      </div>
     </div>
   );
 }
