@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { BananaButton } from "@/components/BananaButton";
+import { signIn } from "next-auth/react";
 
 const PERSONALITY_TYPES = [
 	{ id: 1, code: "INTJ", label: "Architect (INTJ)" },
@@ -39,9 +40,6 @@ export default function RegisterPage() {
 		setLoading(true);
 
 		try {
-			// TODO: potem przesłać tablicę z jednym elementem 16P
-			// TODO: personalities po ID a nie nazwie
-
 			const body = JSON.stringify({
 				"username": username,
 				"email": email,
@@ -60,12 +58,27 @@ export default function RegisterPage() {
 			if (!res.ok) {
 				// TODO: lepszy opis
 				const json = await res.json();
-				console.log(json);
 				console.log("Register error");
+				console.log(json);
 				toast.error("Nie udało się zarejestrować");
-			} else {
-				router.push("/update_profile");
+				return;
 			}
+
+			const result = await signIn("credentials", {
+				redirect: false,
+				email,
+				password,
+				callbackUrl: ""
+			})
+
+			if (result?.error) {
+				router.push("/login?callbackUrl=/update_profile")
+				return;
+			}
+
+
+			router.push("/update_profile");
+
 		} catch (error) {
 			console.log(error);
 			toast.error("Nie udało się zarejestrować");
@@ -79,7 +92,7 @@ export default function RegisterPage() {
 			<ApeBackground />
 			<form
 				onSubmit={handleSubmit}
-				className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white"
+				className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white w-80"
 			>
 				<div className="grid grid-cols-[auto,1fr] items-center gap-2">
 					<label htmlFor="username">Username</label>

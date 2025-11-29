@@ -42,7 +42,7 @@ export default function LoginPage() {
 
 		<form
 			onSubmit={handleSubmit}
-			className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white"
+			className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white w-80"
 		>
 			<div className="grid grid-cols-[auto,1fr] items-center gap-2">
 				<label htmlFor="username">Username</label>

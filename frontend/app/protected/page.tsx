@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function ProtectedPage() {
+	// SESSION EXAMPLE
 	const { data: session, status } = useSession();
 	const router = useRouter();
+
 
 	useEffect(() => {
 		if (status === "loading") return;
@@ -16,13 +18,15 @@ export default function ProtectedPage() {
 	}, [session, status, router]);
 
 	if (status === "loading" || !session) {
+		// TODO: Banana spinner do ładowania strony
+		// Albo jakaś inna małpka co się kręci
 		return <p>Ładowanie...</p>;
 	}
 
 	return (
 		<div>
 			<h1>Chroniona strona</h1>
-			<pre>{JSON.stringify(session.user, null, 2)}</pre>
+			<pre>{JSON.stringify(session, null, 2)}</pre>
 		</div>
 	);
 }
