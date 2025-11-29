@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { ApeBackground } from "@/components/ApeSlider";
 import { BananaButton } from "@/components/BananaButton";
+import Image from "next/image";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
@@ -37,9 +38,18 @@ export default function LoginPage() {
 		router.push(callbackUrl);
 	};
 
-	return <div className="relative h-screen w-screen flex items-center justify-center bg-amber-200 overflow-hidden">
+	return <div className="relative h-screen w-screen flex flex-col items-center justify-start bg-amber-200 overflow-hidden pt-16">
 		<ApeBackground />
 
+		<div className="flex flex-col items-center gap-2 mb-2">
+			<div className="relative w-64 h-64">
+				<Image
+					src="/monke_sign_in_na_odwrut.png"
+					alt="Ape Together Strong"
+					fill
+				/>
+			</div>
+		</div>
 		<form
 			onSubmit={handleSubmit}
 			className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white w-80"
@@ -71,5 +81,4 @@ export default function LoginPage() {
 			<BananaButton label="Login" loadingLabel="Loading..." loading={loading} />
 		</form>
 	</div>
-
 }
