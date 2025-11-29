@@ -1,11 +1,31 @@
 "use client";
 import Card from "@/components/card";
-import { InfoPanel, type InfoPanelHandle } from "@/components/InfoPanel";
+import { InfoPanel } from "@/components/InfoPanel";
 import MapClient from "@/components/mapClient";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useMap } from "react-leaflet";
+import { InfoPanelHandle } from "@/types/types";
+import { LatLng, AtsEvent } from "@/types/types";
 
 export default function DashboardPage() {
   const infoRef = useRef<InfoPanelHandle | null>(null);
+  const addRef = useRef<InfoPanelHandle | null>(null);
+
+  const [events, setEvents] = useState<AtsEvent[]>([]);
+  const [draftPosition, setDraftPosition] = useState<LatLng | null>(null);
+
+  const handleConfirmAdd = () => {
+    if (!draftPosition) return;
+
+    const newEvent: AtsEvent = {
+      id: Date.now(),
+      position: draftPosition,
+    };
+    setEvents((prevEvents) => [...prevEvents, newEvent]);
+    setDraftPosition(null);
+    addRef.current?.close();
+  };
+
   return (
     <div className="grid grid-cols-2 h-screen">
       <main className="shadow-2xl rounded-xl p-4 z-50 bg-white">
@@ -45,19 +65,32 @@ export default function DashboardPage() {
       <div className="relative">
         <div className="w-[calc(100%+0.5rem)] h-full overflow-hidden backdrop-blur-xl border -ml-2">
           <MapClient
-            events={[]}
+            events={events}
+            draftPosition={draftPosition}
             onClickCallback={(latlng) => {
               console.log(latlng);
-              infoRef.current?.open();
+              setDraftPosition(latlng);
+              addRef.current?.open();
             }}
             onMarkerCallback={(marker) => {
               console.log(marker);
+              infoRef.current?.open();
             }}
             onPanCallback={(bounds) => console.log(bounds)}
           />
         </div>
         <InfoPanel ref={infoRef} headerComponent={<>Header</>}>
           INFO PANEL CONTENT
+        </InfoPanel>
+        <InfoPanel
+          ref={addRef}
+          headerComponent={<>Add Event</>}
+          onClose={() => {
+            setDraftPosition(null);
+          }}
+        >
+          ADD EVENT CONTENT
+          <button onClick={handleConfirmAdd}>Confirm Add</button>
         </InfoPanel>
       </div>
     </div>

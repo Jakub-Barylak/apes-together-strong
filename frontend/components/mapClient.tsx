@@ -2,38 +2,20 @@
 
 import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
-import { greenIcon } from "@/assets/mapMarkers";
-
-type ReactLeafletModule = typeof import("react-leaflet");
-type LeafletModule = typeof import("leaflet");
-
-type MapLibs = {
-  L: LeafletModule;
-  MapContainer: ReactLeafletModule["MapContainer"];
-  TileLayer: ReactLeafletModule["TileLayer"];
-  Marker: ReactLeafletModule["Marker"];
-  Popup: ReactLeafletModule["Popup"];
-  useMap: ReactLeafletModule["useMap"];
-  Circle: ReactLeafletModule["Circle"];
-  CircleMarker: ReactLeafletModule["CircleMarker"];
-};
-
-type LatLng = [number, number];
-
-type AtsEvent = {
-  id: number;
-  position: LatLng;
-};
+import { greenIcon, blueIcon, redIcon } from "@/assets/mapMarkers";
+import { AtsEvent, LatLng, MapLibs } from "@/types/types";
 
 const DEFAULT_CENTER: LatLng = [50.288636634077264, 18.677458290326385]; // AEI
 
 export default function MapClient({
   events,
+  draftPosition,
   onClickCallback,
   onPanCallback,
   onMarkerCallback,
 }: {
   events: AtsEvent[];
+  draftPosition: LatLng | null;
   onClickCallback: (latlng: LatLng) => void;
   onPanCallback: (bounds: any) => void;
   onMarkerCallback: (event: AtsEvent) => void;
@@ -137,13 +119,22 @@ export default function MapClient({
     return null;
   }
 
-  function MapClickHandler({
-    onClick,
-    onMarkerClick,
-  }: {
-    onClick: (latlng: LatLng) => void;
-    onMarkerClick: (marker: any) => void;
-  }) {
+  function CenterOnDraft({ position }: { position: LatLng }) {
+    const map = useMap();
+
+    useEffect(() => {
+      map.setView(position, map.getZoom(), { animate: true });
+
+      const size = map.getSize();
+      const offsetY = size.y / 6; // przesunięcie o 1/6 wysokości w górę
+
+      map.panBy([0, -offsetY], { animate: true });
+    }, [map, position]);
+
+    return null;
+  }
+
+  function MapClickHandler({ onClick }: { onClick: (latlng: LatLng) => void }) {
     const map = useMap();
     let start: { x: number; y: number } | null = null;
 
@@ -222,8 +213,23 @@ export default function MapClient({
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {events.map((event) => (
-          <Marker key={event.id} position={event.position} icon={greenIcon} />
+          <Marker
+            key={event.id}
+            position={event.position}
+            icon={blueIcon}
+            eventHandlers={{
+              click() {
+                onMarkerCallback(event);
+              },
+            }}
+          />
         ))}
+        {draftPosition && (
+          <>
+            <Marker position={draftPosition} icon={redIcon} />
+            <CenterOnDraft position={draftPosition} />
+          </>
+        )}
         <Marker
           key={-1}
           position={DEFAULT_CENTER}
@@ -236,10 +242,7 @@ export default function MapClient({
         >
           <Popup>Here be Apes 🐒</Popup>
         </Marker>
-        <MapClickHandler
-          onClick={onClickCallback}
-          onMarkerClick={onMarkerCallback}
-        />
+        <MapClickHandler onClick={onClickCallback} />
         <MapBoundsListener onChange={onPanCallback} />
         {userPos && (
           <>

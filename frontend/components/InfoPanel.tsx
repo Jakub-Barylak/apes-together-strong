@@ -1,20 +1,11 @@
 import { XMarkIcon } from "@heroicons/react/24/solid";
+import { forwardRef, useImperativeHandle, useRef, type ReactNode } from "react";
 import { useState } from "react";
-import { forwardRef, useImperativeHandle, useRef } from "react";
-
-export type InfoPanelHandle = {
-  open: () => void;
-};
-
-type InfoPanelProps = {
-  headerComponent?: React.ReactNode;
-  children: React.ReactNode;
-  visible?: boolean;
-};
+import { InfoPanelHandle, InfoPanelProps } from "@/types/types";
 
 export const InfoPanel = forwardRef<InfoPanelHandle, InfoPanelProps>(
-  ({ headerComponent, children, visible }: InfoPanelProps, ref) => {
-    const [isVisible, setIsVisible] = useState(visible ?? false); // TODO: zmienić na false
+  ({ headerComponent, children, visible, onClose }: InfoPanelProps, ref) => {
+    const [isVisible, setIsVisible] = useState(visible ?? false);
 
     useImperativeHandle(
       ref,
@@ -22,13 +13,13 @@ export const InfoPanel = forwardRef<InfoPanelHandle, InfoPanelProps>(
         open() {
           setIsVisible(true);
         },
+        close() {
+          setIsVisible(false);
+          onClose?.();
+        },
       }),
-      [],
+      [onClose],
     );
-
-    const close = () => {
-      setIsVisible(false);
-    };
 
     if (!isVisible) return null;
 
@@ -38,7 +29,10 @@ export const InfoPanel = forwardRef<InfoPanelHandle, InfoPanelProps>(
           <div>{headerComponent}</div>
           <XMarkIcon
             className="w-10 h-10 absolute top-4 right-4 cursor-pointer"
-            onClick={close}
+            onClick={() => {
+              setIsVisible(false);
+              onClose?.();
+            }}
           />
         </header>
         <div className="overflow-auto">{children}</div>
