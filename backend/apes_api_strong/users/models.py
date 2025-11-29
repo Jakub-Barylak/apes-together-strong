@@ -24,6 +24,8 @@ class User(AbstractUser):
 
     tags = models.ManyToManyField(Tag, blank=True)
 
+    events = models.ManyToManyField('events.Event', blank=True, related_name='participants')
+
     def __str__(self):
         return self.username
     

@@ -7,6 +7,10 @@ import openai
 from django.conf import settings
 from events.middlewares import get_distance
 from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import action
+
+
 
 from users.models import Personality
 # Create your views here.
@@ -48,10 +52,10 @@ class EventViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        lat_max = float(self.request.query_params.get("n"))
-        lon_max = float(self.request.query_params.get("e"))
-        lat_min = float(self.request.query_params.get("s"))
-        lon_min = float(self.request.query_params.get("w"))
+        lat_max = self.request.query_params.get("n")
+        lon_max = self.request.query_params.get("e")
+        lat_min = self.request.query_params.get("s")
+        lon_min = self.request.query_params.get("w")
 
         lat = self.request.query_params.get("lat")
         lon = self.request.query_params.get("lon")
@@ -90,8 +94,29 @@ class EventViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(tags__id__in=tags).distinct()
 
         if lat_max is not None and lon_max is not None and lat_min is not None and lon_min is not None:
-            queryset = queryset.filter(latitude__gte=lat_min, latitude__lte=lat_max, longitude__gte=lon_min, longitude__lte=lon_max)
+            queryset = queryset.filter(latitude__gte=float(lat_min), latitude__lte=float(lat_max), longitude__gte=float(lon_min), longitude__lte=float(lon_max))
 
         return queryset
+    
+    @action(detail=True, methods=["post"], url_path="join")
+    def join_event(self, request, pk=None):
+        event = self.get_object()
+        user = request.user
 
+        if event.participants.filter(id=user.id).exists():
+            return Response({"detail": "Already participating"}, status=400)
+
+        event.participants.add(user)
+        return Response({"detail": "Joined"}, status=200)
+
+    @action(detail=True, methods=["post"], url_path="leave")
+    def leave_event(self, request, pk=None):
+        event = self.get_object()
+        user = request.user
+
+        if not event.participants.filter(id=user.id).exists():
+            return Response({"detail": "Not participating"}, status=400)
+
+        event.participants.remove(user)
+        return Response({"detail": "Left"}, status=200)
 
