@@ -2,17 +2,78 @@
 import Card from "@/components/card";
 import { InfoPanel } from "@/components/InfoPanel";
 import MapClient from "@/components/mapClient";
-import { useRef, useState } from "react";
-import { useMap } from "react-leaflet";
-import { InfoPanelHandle } from "@/types/types";
-import { LatLng, AtsEvent } from "@/types/types";
+import { useEffect, useRef, useState } from "react";
+import { InfoPanelHandle, LatLng, AtsEvent, MapBounds } from "@/types/types";
+
+const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
 
 export default function DashboardPage() {
   const infoRef = useRef<InfoPanelHandle | null>(null);
   const addRef = useRef<InfoPanelHandle | null>(null);
 
+  const boundsDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
   const [events, setEvents] = useState<AtsEvent[]>([]);
   const [draftPosition, setDraftPosition] = useState<LatLng | null>(null);
+
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  const [eventsError, setEventsError] = useState<string | null>(null);
+
+  const handleMapBoundsChange = (bounds: any) => {
+    if (boundsDebounceRef.current) {
+      clearTimeout(boundsDebounceRef.current);
+    }
+
+    boundsDebounceRef.current = setTimeout(() => {
+      setMapBounds({
+        n: bounds.getNorth(),
+        s: bounds.getSouth(),
+        e: bounds.getEast(),
+        w: bounds.getWest(),
+      });
+    }, 300);
+  };
+
+  useEffect(() => {
+    if (!mapBounds || hasLoadedOnce) return;
+    if (!API_HOST) {
+      console.error("API_HOST is not defined");
+      return;
+    }
+
+    const fetchEvents = async () => {
+      setEventsError(null);
+
+      try {
+        const { n, s, e, w } = mapBounds;
+        const url = `${API_HOST}/events?n=${n}&s=${s}&e=${e}&w=${w}`;
+        console.log("Fetching events from:", url);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: any[] = await response.json();
+
+        const mapped: AtsEvent[] = data.map((item: any) => ({
+          id: item.id,
+          position: [item.latitude, item.longitude],
+        }));
+
+        setEvents(mapped);
+        setHasLoadedOnce(true);
+      } catch (error: any) {
+        console.error("Error fetching events:", error);
+        setEventsError(error.message);
+      }
+    };
+
+    fetchEvents();
+  }, [mapBounds, hasLoadedOnce]);
 
   const handleConfirmAdd = () => {
     if (!draftPosition) return;
@@ -76,7 +137,7 @@ export default function DashboardPage() {
               console.log(marker);
               infoRef.current?.open();
             }}
-            onPanCallback={(bounds) => console.log(bounds)}
+            onPanCallback={handleMapBoundsChange}
           />
         </div>
         <InfoPanel ref={infoRef} headerComponent={<>Header</>}>

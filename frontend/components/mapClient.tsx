@@ -23,6 +23,7 @@ export default function MapClient({
   const [libs, setLibs] = useState<MapLibs | null>(null);
   const [userPos, setUserPos] = useState<LatLng | null>(null);
   const [userAccuracy, setUserAccuracy] = useState<number | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -107,29 +108,29 @@ export default function MapClient({
     Circle,
     CircleMarker,
   } = libs;
-  const center = userPos || DEFAULT_CENTER;
+  const initialCenter = DEFAULT_CENTER;
 
   function RecenterOnUser({ position }: { position: LatLng }) {
     const map = useMap();
+    const [hasCentered, setHasCentered] = useState(false);
 
     useEffect(() => {
+      if (!position || hasCentered) return;
       map.setView(position, 13);
-    }, [map, position]);
+    }, [map, position, hasCentered]);
 
     return null;
   }
 
-  function CenterOnDraft({ position }: { position: LatLng }) {
+  function OneTimeCenterOnUser() {
     const map = useMap();
 
     useEffect(() => {
-      map.setView(position, map.getZoom(), { animate: true });
-
-      const size = map.getSize();
-      const offsetY = size.y / 6; // przesunięcie o 1/6 wysokości w górę
-
-      map.panBy([0, -offsetY], { animate: true });
-    }, [map, position]);
+      if (userPos && !initialized) {
+        map.setView(userPos, 13);
+        setInitialized(true);
+      }
+    }, [map, userPos, initialized]);
 
     return null;
   }
@@ -206,7 +207,7 @@ export default function MapClient({
   return (
     <div className="h-full w-full">
       <MapContainer
-        center={center} // podmień na swoje coords
+        center={initialCenter} // podmień na swoje coords
         zoom={13}
         scrollWheelZoom
         className="h-full w-full"
@@ -227,7 +228,6 @@ export default function MapClient({
         {draftPosition && (
           <>
             <Marker position={draftPosition} icon={redIcon} />
-            <CenterOnDraft position={draftPosition} />
           </>
         )}
         <Marker
@@ -266,7 +266,7 @@ export default function MapClient({
                 weight: 1,
               }}
             />
-            <RecenterOnUser position={userPos} />
+            <OneTimeCenterOnUser />
           </>
         )}
       </MapContainer>

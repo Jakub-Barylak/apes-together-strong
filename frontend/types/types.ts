@@ -31,3 +31,10 @@ export type AtsEvent = {
   id: number;
   position: LatLng;
 };
+
+export type MapBounds = {
+  n: number;
+  s: number;
+  e: number;
+  w: number;
+};
