@@ -12,9 +12,15 @@
     "leaflet": "^1.9.4",
     "next": "16.0.5",
     "next-auth": "^4.24.13",
+<<<<<<< Updated upstream
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-toastify": "^11.0.5"
+=======
+    "react": "^19.0.0-rc.1",
+    "react-dom": "^19.0.0-rc.1",
+    "react-leaflet": "^5.0.0"
+>>>>>>> Stashed changes
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
