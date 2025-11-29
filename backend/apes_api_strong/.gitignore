@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*$py.class
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+.pytest_cache/
+.coverage
+
+# Django
+*.log
+*.pot
+*.pyc
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+*.mo
+
+# Django migrations
+*/migrations/*.py
+!*/migrations/__init__.py
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# PyCharm
+*.iml
+
+# mypy
+.mypy_cache/
+
+# pipenv / poetry
+Pipfile.lock
+poetry.lock
+
+# pytest
+.pytest_cache/
