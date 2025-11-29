@@ -4,6 +4,7 @@ import { ApeBackground } from "@/components/ApeSlider";
 import { FormEvent, useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { BananaButton } from "@/components/BananaButton";
 
 const PERSONALITY_TYPES = [
 	{ id: 1, code: "INTJ", label: "Architect (INTJ)" },
@@ -45,15 +46,11 @@ export default function RegisterPage() {
 				"username": username,
 				"email": email,
 				"password": password,
-				"personality": personality,
+				"personality": [parseInt(personality)],
 			});
 
-			console.log(body);
-
-			console.log(process.env.NEXT_PUBLIC_API_HOST);
 			const res = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/users/`, {
 				method: "POST",
-				credentials: "include",
 				headers: {
 					"Content-Type": "application/json",
 				},
@@ -145,22 +142,7 @@ export default function RegisterPage() {
 					</select>
 				</div>
 
-				<button
-					type="submit"
-					disabled={loading}
-					className="mt-2 px-4 py-2 rounded bg-yellow-400 text-white cursor-pointer disabled:opacity-50 text-xl flex items-center justify-center gap-2"
-				>
-					{loading ? (
-						<>
-							<span className="animate-spin inline-block" aria-hidden="true">
-								🍌
-							</span>
-							<span>Loading…</span>
-						</>
-					) : (
-						"Register"
-					)}
-				</button>
+				<BananaButton label="Register" loadingLabel="Loading..." loading={loading} />
 			</form>
 		</div>
 	);

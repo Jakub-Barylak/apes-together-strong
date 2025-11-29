@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { ApeBackground } from "@/components/ApeSlider";
+import { BananaButton } from "@/components/BananaButton";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
@@ -67,22 +68,7 @@ export default function LoginPage() {
 				/>
 			</div>
 
-			<button
-				type="submit"
-				disabled={loading}
-				className="mt-2 px-4 py-2 rounded bg-yellow-400 text-white cursor-pointer disabled:opacity-50 text-xl flex items-center justify-center gap-2"
-			>
-				{loading ? (
-					<>
-						<span className="animate-spin inline-block" aria-hidden="true">
-							🍌
-						</span>
-						<span>Loading…</span>
-					</>
-				) : (
-					"Login"
-				)}
-			</button>
+			<BananaButton label="Login" loadingLabel="Loading..." loading={loading} />
 		</form>
 	</div>
 
