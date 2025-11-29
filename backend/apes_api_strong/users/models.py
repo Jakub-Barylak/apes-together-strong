@@ -1,6 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    
+    
+
 class User(AbstractUser):
     bananas = models.PositiveIntegerField(default=0)
 
@@ -30,10 +39,8 @@ class User(AbstractUser):
         null=True
     )
 
+    tags = models.ManyToManyField(Tag, blank=True)
+
     def __str__(self):
         return self.username
-    
-
-
-    
     
