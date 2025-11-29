@@ -15,7 +15,8 @@ export default function LoginPage() {
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 
-		setLoading(true);
+		console.log("Login");
+		// setLoading(true);
 
 		const result = await signIn("credentials", {
 			redirect: false,
@@ -24,7 +25,7 @@ export default function LoginPage() {
 			callbackUrl
 		})
 
-		setLoading(false);
+		// setLoading(false);
 
 		if (result?.error) {
 			alert("Niepoprawny login lub hasło");
@@ -36,8 +37,8 @@ export default function LoginPage() {
 
 	return <div><form onSubmit={handleSubmit}>
 		<label>
-			Email
-			<input value={email} type="email" onChange={(e) => setEmail(e.target.value)} required />
+			Username
+			<input value={email} type="text" onChange={(e) => setEmail(e.target.value)} required />
 		</label>
 		<label>
 			Password

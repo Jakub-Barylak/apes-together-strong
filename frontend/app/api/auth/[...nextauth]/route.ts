@@ -1,15 +1,13 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-// TODO: podmienić na faktyczny ulr do API
-const API_BASE = "localhost:5000";
+const API_BASE = "http://127.0.0.1:8000/api";
 
 async function loginOnDjango(email: string, password: string) {
-	// TODO: podmienić endpoint na login
-  const res = await fetch(`${API_BASE}/auth/login/`, {
+  const res = await fetch(`${API_BASE}/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ "username": email, "password": password }),
   });
 
   if (!res.ok) {
@@ -21,8 +19,7 @@ async function loginOnDjango(email: string, password: string) {
 
 async function refreshAccessToken(token: any) {
   try {
-		// TODO: zmienić na faktyczny endpoint refresh
-    const res = await fetch(`${API_BASE}/auth/refresh/`, {
+    const res = await fetch(`${API_BASE}/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh: token.refreshToken }),
@@ -34,15 +31,16 @@ async function refreshAccessToken(token: any) {
 
     const data = await res.json();
 
-		// TODO: ewentualnie zmienić 
     const accessToken = data.access;
+		const refresh = data.refresh;
 		// TODO: ustawić faktyczny expiration token
-    const accessTokenExpires = Date.now() + 5 * 60 * 1000;
+    const accessTokenExpires = Date.now() +  60 * 24 * 30;
 
     return {
       ...token,
       accessToken,
       accessTokenExpires,
+			refreshToken: refresh
     };
   } catch (e) {
     console.error("Refresh token error", e);
@@ -64,18 +62,18 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+				console.log("Authorize");
         try {
           const data = await loginOnDjango(
             credentials.email,
             credentials.password
           );
+					console.log(data);
 
-          // data: { access, refresh, user }
           if (!data?.access || !data?.refresh) return null;
 
           return {
-            id: data.user.id,
-            email: data.user.email,
+            email: credentials.email,
             ...data.user,
             accessToken: data.access,
             refreshToken: data.refresh,
@@ -100,7 +98,7 @@ export const authOptions: NextAuthOptions = {
           accessToken: (user as any).accessToken,
           refreshToken: (user as any).refreshToken,
           // Załóżmy 5 minut ważności accessa (albo weź z payloadu jeśli kodujesz exp)
-          accessTokenExpires: Date.now() + 5 * 60 * 1000,
+          accessTokenExpires: Date.now() + 60 * 24 * 30,
           user,
         };
       }
