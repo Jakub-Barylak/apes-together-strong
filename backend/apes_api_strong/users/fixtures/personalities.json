@@ -1,0 +1,18 @@
+[
+  { "model": "users.personality", "pk": 1, "fields": { "code": "INTJ", "label": "Architect (INTJ)" } },
+  { "model": "users.personality", "pk": 2, "fields": { "code": "INTP", "label": "Logician (INTP)" } },
+  { "model": "users.personality", "pk": 3, "fields": { "code": "ENTJ", "label": "Commander (ENTJ)" } },
+  { "model": "users.personality", "pk": 4, "fields": { "code": "ENTP", "label": "Debater (ENTP)" } },
+  { "model": "users.personality", "pk": 5, "fields": { "code": "INFJ", "label": "Advocate (INFJ)" } },
+  { "model": "users.personality", "pk": 6, "fields": { "code": "INFP", "label": "Mediator (INFP)" } },
+  { "model": "users.personality", "pk": 7, "fields": { "code": "ENFJ", "label": "Protagonist (ENFJ)" } },
+  { "model": "users.personality", "pk": 8, "fields": { "code": "ENFP", "label": "Campaigner (ENFP)" } },
+  { "model": "users.personality", "pk": 9, "fields": { "code": "ISTJ", "label": "Logistician (ISTJ)" } },
+  { "model": "users.personality", "pk": 10, "fields": { "code": "ISFJ", "label": "Defender (ISFJ)" } },
+  { "model": "users.personality", "pk": 11, "fields": { "code": "ESTJ", "label": "Executive (ESTJ)" } },
+  { "model": "users.personality", "pk": 12, "fields": { "code": "ESFJ", "label": "Consul (ESFJ)" } },
+  { "model": "users.personality", "pk": 13, "fields": { "code": "ISTP", "label": "Virtuoso (ISTP)" } },
+  { "model": "users.personality", "pk": 14, "fields": { "code": "ISFP", "label": "Adventurer (ISFP)" } },
+  { "model": "users.personality", "pk": 15, "fields": { "code": "ESTP", "label": "Entrepreneur (ESTP)" } },
+  { "model": "users.personality", "pk": 16, "fields": { "code": "ESFP", "label": "Entertainer (ESFP)" } }
+]
