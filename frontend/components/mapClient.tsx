@@ -17,7 +17,7 @@ type MapLibs = {
 
 type LatLng = [number, number];
 
-const DEFAULT_CENTER: LatLng = [50.29, 18.67];
+const DEFAULT_CENTER: LatLng = [50.288636634077264, 18.677458290326385]; // AEI
 
 export default function MapClient() {
   const [libs, setLibs] = useState<MapLibs | null>(null);
