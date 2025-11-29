@@ -20,9 +20,24 @@ type MapLibs = {
 
 type LatLng = [number, number];
 
+type AtsEvent = {
+  id: number;
+  position: LatLng;
+};
+
 const DEFAULT_CENTER: LatLng = [50.288636634077264, 18.677458290326385]; // AEI
 
-export default function MapClient() {
+export default function MapClient({
+  events,
+  onClickCallback,
+  onPanCallback,
+  onMarkerCallback,
+}: {
+  events: AtsEvent[];
+  onClickCallback: (latlng: LatLng) => void;
+  onPanCallback: (bounds: any) => void;
+  onMarkerCallback: (event: AtsEvent) => void;
+}) {
   const [libs, setLibs] = useState<MapLibs | null>(null);
   const [userPos, setUserPos] = useState<LatLng | null>(null);
   const [userAccuracy, setUserAccuracy] = useState<number | null>(null);
@@ -122,7 +137,13 @@ export default function MapClient() {
     return null;
   }
 
-  function MapClickHandler({ onClick }: { onClick: (latlng: LatLng) => void }) {
+  function MapClickHandler({
+    onClick,
+    onMarkerClick,
+  }: {
+    onClick: (latlng: LatLng) => void;
+    onMarkerClick: (marker: any) => void;
+  }) {
     const map = useMap();
     let start: { x: number; y: number } | null = null;
 
@@ -133,6 +154,14 @@ export default function MapClient() {
 
       const handleMouseUp = (e: any) => {
         if (!start) return;
+
+        const target = e.originalEvent?.target as HTMLElement | null;
+
+        if (target?.closest(".leaflet-marker-icon, .leaflet-interactive")) {
+          start = null;
+          return;
+        }
+
         const dx = Math.abs(e.originalEvent.clientX - start.x);
         const dy = Math.abs(e.originalEvent.clientY - start.y);
 
@@ -192,20 +221,26 @@ export default function MapClient() {
         className="h-full w-full"
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-        <Marker position={DEFAULT_CENTER} icon={greenIcon}>
+        {events.map((event) => (
+          <Marker key={event.id} position={event.position} icon={greenIcon} />
+        ))}
+        <Marker
+          key={-1}
+          position={DEFAULT_CENTER}
+          icon={greenIcon}
+          eventHandlers={{
+            click() {
+              onMarkerCallback({ id: -1, position: DEFAULT_CENTER });
+            },
+          }}
+        >
           <Popup>Here be Apes 🐒</Popup>
         </Marker>
         <MapClickHandler
-          onClick={(latlng) => {
-            console.log("Map clicked at:", latlng);
-          }}
+          onClick={onClickCallback}
+          onMarkerClick={onMarkerCallback}
         />
-        <MapBoundsListener
-          onChange={(bounds) => {
-            console.log("Map bounds changed:", bounds);
-          }}
-        />
+        <MapBoundsListener onChange={onPanCallback} />
         {userPos && (
           <>
             <CircleMarker
