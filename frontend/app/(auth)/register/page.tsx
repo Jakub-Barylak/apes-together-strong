@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { BananaButton } from "@/components/BananaButton";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 
 const PERSONALITY_TYPES = [
 	{ id: 1, code: "INTJ", label: "Architect (INTJ)" },
@@ -88,8 +89,17 @@ export default function RegisterPage() {
 	};
 
 	return (
-		<div className="relative h-screen w-screen flex items-center justify-center bg-amber-200 overflow-hidden">
+		<div className="relative h-screen w-screen flex flex-col items-center justify-start bg-amber-200 overflow-hidden pt-12">
 			<ApeBackground />
+			<div className="flex flex-col items-center gap-2 mb-2">
+				<div className="relative w-60 h-60">
+					<Image
+						src="/monke_sign_in_na_odwrut.png"
+						alt="Ape Together Strong"
+						fill
+					/>
+				</div>
+			</div>
 			<form
 				onSubmit={handleSubmit}
 				className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white w-80"

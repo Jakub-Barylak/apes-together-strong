@@ -7,14 +7,14 @@ async function loginOnDjango(email: string, password: string) {
 	const res = await fetch(`${API_BASE}/token/`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ username: email, password: password })
+		body: JSON.stringify({ username: email, password })
 	});
 
 	if (!res.ok) {
 		throw new Error("Invalid credentials");
 	}
 
-	return res.json();
+	return res.json(); // { access, refresh }
 }
 
 async function refreshAccessToken(token: any) {
@@ -32,14 +32,15 @@ async function refreshAccessToken(token: any) {
 		const data = await res.json();
 
 		const accessToken = data.access;
-		const refresh = data.refresh;
-		const accessTokenExpires = Date.now() + 1000 * 60 * 60 * 24 * 30; //30 days
+		const refreshToken = data.refresh ?? token.refreshToken;
+		const accessTokenExpires = Date.now() + 1000 * 60 * 60 * 24 * 30; // 30 dni
 
 		return {
 			...token,
 			accessToken,
 			accessTokenExpires,
-			refreshToken: refresh
+			refreshToken: refreshToken
+			// UWAGA: token.user (z tags) zostaje bez zmian, bo go nie ruszamy
 		};
 	} catch (e) {
 		console.error("Refresh token error", e);
@@ -66,7 +67,6 @@ export const authOptions: NextAuthOptions = {
 
 					if (!data?.access || !data?.refresh) return null;
 
-					// FETCH EXAMPLE
 					const res = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/users/me/`, {
 						method: "GET",
 						headers: {
@@ -76,17 +76,16 @@ export const authOptions: NextAuthOptions = {
 					});
 
 					const me = await res.json();
-					console.log(me);
+					console.log("USER FROM DJANGO:", me);
 
-					// TODO: get personality name
-					// TODO: get tag names
+					// To jest "user", który trafi do jwt({ token, user })
 					return {
 						id: me.id,
 						name: me.username,
 						bananas: me.bananas,
 						email: me.email,
 						personality: me.personality,
-						tags: me.tags,
+						tags: me.tags, // <<< TU MAMY TAGI
 						accessToken: data.access,
 						refreshToken: data.refresh
 					};
@@ -101,41 +100,60 @@ export const authOptions: NextAuthOptions = {
 		strategy: "jwt"
 	},
 	callbacks: {
-		// zapis/odświeżanie tokenów w JWT NextAuth
 		async jwt({ token, user }) {
-			// Pierwsze logowanie
+			// Pierwsze wywołanie po logowaniu – mamy usera z authorize()
 			if (user) {
-				return {
+				const u = user as any;
+
+				const nextToken = {
 					...token,
-					accessToken: (user as any).accessToken,
-					refreshToken: (user as any).refreshToken,
-					accessTokenExpires: Date.now() + 1000 * 60 * 60 * 24 * 30, // 30 days
-					user
+					user: {
+						id: u.id,
+						name: u.name,
+						bananas: u.bananas,
+						email: u.email,
+						personality: u.personality,
+						tags: u.tags // <<< TAGI LĄDUJĄ W token.user.tags
+					},
+					accessToken: u.accessToken,
+					refreshToken: u.refreshToken,
+					accessTokenExpires: Date.now() + 1000 * 60 * 60 * 24 * 30
 				};
+
+				// Dla debugowania:
+				console.log("JWT AFTER LOGIN:", JSON.stringify(nextToken.user, null, 2));
+
+				return nextToken;
 			}
 
-			// Jeśli access token jeszcze ważny – zwracamy istniejący
+			// Kolejne wywołania – jeśli token jeszcze ważny, zwróć aktualny
 			if (Date.now() < (token.accessTokenExpires as number)) {
 				return token;
 			}
 
-			// Inaczej – odświeżamy
-			return await refreshAccessToken(token);
+			// Po wygaśnięciu access tokena odświeżamy
+			const refreshed = await refreshAccessToken(token);
+			console.log("JWT AFTER REFRESH:", JSON.stringify(refreshed.user, null, 2));
+			return refreshed;
 		},
 
-		// Co trafi do session po stronie klienta
 		async session({ session, token }) {
-			if (token) {
-				(session as any).accessToken = token.accessToken;
-				(session as any).refreshToken = token.refreshToken;
-				(session as any).error = token.error;
-				session.user = token.user as any;
-			}
-			return session;
+			// Przerzucamy całego token.user do session.user
+			const nextSession: any = {
+				...session,
+				user: token.user, // <<< TU WRZUCA CAŁEGO USERA Z TAGAMI
+				accessToken: token.accessToken,
+				refreshToken: token.refreshToken,
+				error: token.error
+			};
+
+			console.log("SESSION IN CALLBACK:", JSON.stringify(nextSession.user, null, 2));
+
+			return nextSession;
 		}
 	},
 	pages: {
-		signIn: "/login" // własna strona logowania
+		signIn: "/login"
 	},
 	secret: process.env.NEXTAUTH_SECRET
 };
