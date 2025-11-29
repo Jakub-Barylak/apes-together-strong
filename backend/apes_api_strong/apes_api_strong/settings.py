@@ -48,10 +48,12 @@ INSTALLED_APPS = [
     'drf_yasg',
     'users',
     'events',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -161,3 +163,5 @@ SWAGGER_SETTINGS = {
 }
 
 OPENAI_API_KEY = config("OPENAI_API_KEY")
+
+CORS_ALLOW_ALL_ORIGINS = True
