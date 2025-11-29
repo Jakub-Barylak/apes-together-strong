@@ -94,7 +94,7 @@ export default function RegisterPage() {
 			<div className="flex flex-col items-center gap-2 mb-2">
 				<div className="relative w-60 h-60">
 					<Image
-						src="/monke_sign_in_na_odwrut.png"
+						src="/monke_sign_up_na_odwrut.png"
 						alt="Ape Together Strong"
 						fill
 					/>
