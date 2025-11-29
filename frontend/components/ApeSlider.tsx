@@ -4,7 +4,7 @@ export const ApeBackground = () => {
 	const line = segment.repeat(20); // BARDZO długa taśma
 
 	return (
-		<div className="absolute inset-0 overflow-hidden">
+		<div className="absolute inset-0 overflow-hidden select-none">
 			<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-12 space-y-10"
 			>
 				{/* Linia 1 */}
