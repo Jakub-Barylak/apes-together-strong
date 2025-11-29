@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import { greenIcon } from "@/assets/mapMarkers";
 
 type ReactLeafletModule = typeof import("react-leaflet");
 type LeafletModule = typeof import("leaflet");
@@ -13,15 +14,33 @@ type MapLibs = {
   Marker: ReactLeafletModule["Marker"];
   Popup: ReactLeafletModule["Popup"];
   useMap: ReactLeafletModule["useMap"];
+  Circle: ReactLeafletModule["Circle"];
+  CircleMarker: ReactLeafletModule["CircleMarker"];
 };
 
 type LatLng = [number, number];
 
+type AtsEvent = {
+  id: number;
+  position: LatLng;
+};
+
 const DEFAULT_CENTER: LatLng = [50.288636634077264, 18.677458290326385]; // AEI
 
-export default function MapClient() {
+export default function MapClient({
+  events,
+  onClickCallback,
+  onPanCallback,
+  onMarkerCallback,
+}: {
+  events: AtsEvent[];
+  onClickCallback: (latlng: LatLng) => void;
+  onPanCallback: (bounds: any) => void;
+  onMarkerCallback: (event: AtsEvent) => void;
+}) {
   const [libs, setLibs] = useState<MapLibs | null>(null);
   const [userPos, setUserPos] = useState<LatLng | null>(null);
+  const [userAccuracy, setUserAccuracy] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,6 +77,8 @@ export default function MapClient() {
         Marker: RL.Marker,
         Popup: RL.Popup,
         useMap: RL.useMap,
+        Circle: RL.Circle,
+        CircleMarker: RL.CircleMarker,
       });
     })();
 
@@ -75,8 +96,9 @@ export default function MapClient() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         console.log("User position:", pos);
-        const { latitude, longitude } = pos.coords;
+        const { latitude, longitude, accuracy } = pos.coords;
         setUserPos([latitude, longitude]);
+        setUserAccuracy(accuracy);
       },
       (err) => {
         console.warn("Unable to retrieve your location", err);
@@ -94,7 +116,15 @@ export default function MapClient() {
     );
   }
 
-  const { MapContainer, TileLayer, Marker, Popup, useMap } = libs;
+  const {
+    MapContainer,
+    TileLayer,
+    Marker,
+    Popup,
+    useMap,
+    Circle,
+    CircleMarker,
+  } = libs;
   const center = userPos || DEFAULT_CENTER;
 
   function RecenterOnUser({ position }: { position: LatLng }) {
@@ -107,7 +137,13 @@ export default function MapClient() {
     return null;
   }
 
-  function MapClickHandler({ onClick }: { onClick: (latlng: LatLng) => void }) {
+  function MapClickHandler({
+    onClick,
+    onMarkerClick,
+  }: {
+    onClick: (latlng: LatLng) => void;
+    onMarkerClick: (marker: any) => void;
+  }) {
     const map = useMap();
     let start: { x: number; y: number } | null = null;
 
@@ -118,8 +154,17 @@ export default function MapClient() {
 
       const handleMouseUp = (e: any) => {
         if (!start) return;
+
+        const target = e.originalEvent?.target as HTMLElement | null;
+
+        if (target?.closest(".leaflet-marker-icon, .leaflet-interactive")) {
+          start = null;
+          return;
+        }
+
         const dx = Math.abs(e.originalEvent.clientX - start.x);
         const dy = Math.abs(e.originalEvent.clientY - start.y);
+
         if (dx < 5 && dy < 5) {
           const { lat, lng } = e.latlng;
           onClick([lat, lng]);
@@ -140,6 +185,33 @@ export default function MapClient() {
     return null;
   }
 
+  function MapBoundsListener({
+    onChange,
+  }: {
+    onChange: (bounds: any) => void;
+  }) {
+    const map = useMap();
+
+    useEffect(() => {
+      const update = () => {
+        const b = map.getBounds();
+        onChange(b);
+      };
+
+      map.on("moveend", update);
+      map.on("zoomend", update);
+
+      update();
+
+      return () => {
+        map.off("moveend", update);
+        map.off("zoomend", update);
+      };
+    }, [map, onChange]);
+
+    return null;
+  }
+
   return (
     <div className="h-full w-full">
       <MapContainer
@@ -149,21 +221,49 @@ export default function MapClient() {
         className="h-full w-full"
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-        <Marker position={DEFAULT_CENTER}>
+        {events.map((event) => (
+          <Marker key={event.id} position={event.position} icon={greenIcon} />
+        ))}
+        <Marker
+          key={-1}
+          position={DEFAULT_CENTER}
+          icon={greenIcon}
+          eventHandlers={{
+            click() {
+              onMarkerCallback({ id: -1, position: DEFAULT_CENTER });
+            },
+          }}
+        >
           <Popup>Here be Apes 🐒</Popup>
         </Marker>
+        <MapClickHandler
+          onClick={onClickCallback}
+          onMarkerClick={onMarkerCallback}
+        />
+        <MapBoundsListener onChange={onPanCallback} />
         {userPos && (
           <>
-            <Marker position={userPos}>
-              <Popup>Your location 📍</Popup>
-            </Marker>
-            <RecenterOnUser position={userPos} />
-            <MapClickHandler
-              onClick={(latlng) => {
-                console.log("Map clicked at:", latlng);
+            <CircleMarker
+              center={userPos}
+              radius={6}
+              pathOptions={{
+                color: "#2563eb",
+                fillColor: "#3b82f6",
+                fillOpacity: 1,
+                weight: 2,
               }}
             />
+            <Circle
+              center={userPos}
+              radius={userAccuracy ?? 500} // metry; fallback 500m
+              pathOptions={{
+                color: "#2563eb",
+                fillColor: "#3b82f6",
+                fillOpacity: 0.15,
+                weight: 1,
+              }}
+            />
+            <RecenterOnUser position={userPos} />
           </>
         )}
       </MapContainer>
