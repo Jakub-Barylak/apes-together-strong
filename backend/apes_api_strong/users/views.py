@@ -25,6 +25,11 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
     
+    @action(detail=False, methods=['get'], url_path='me')
+    def me(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+    
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
