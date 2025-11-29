@@ -1,10 +1,14 @@
+"use client";
 import Card from "@/components/card";
+import { InfoPanel, type InfoPanelHandle } from "@/components/InfoPanel";
 import MapClient from "@/components/mapClient";
+import { useRef } from "react";
 
 export default function DashboardPage() {
+  const infoRef = useRef<InfoPanelHandle | null>(null);
   return (
     <div className="grid grid-cols-2 h-screen">
-      <main className="shadow-2xl rounded-2xl p-4">
+      <main className="shadow-2xl rounded-xl p-4 z-50 bg-white">
         <header className="flex justify-between items-center w-full">
           <h1 className="w-auto">ATS</h1>
           <div className="w-auto">PROFILE PIC</div>
@@ -38,8 +42,23 @@ export default function DashboardPage() {
         </h2>
         EVENTS NEARBY LIST
       </main>
-      <div className="w-full h-full overflow-hidden bg-slate-900/60 backdrop-blur-xl border border-slate-700">
-        <MapClient />
+      <div className="relative">
+        <div className="w-[calc(100%+0.5rem)] h-full overflow-hidden backdrop-blur-xl border -ml-2">
+          <MapClient
+            events={[]}
+            onClickCallback={(latlng) => {
+              console.log(latlng);
+              infoRef.current?.open();
+            }}
+            onMarkerCallback={(marker) => {
+              console.log(marker);
+            }}
+            onPanCallback={(bounds) => console.log(bounds)}
+          />
+        </div>
+        <InfoPanel ref={infoRef} headerComponent={<>Header</>}>
+          INFO PANEL CONTENT
+        </InfoPanel>
       </div>
     </div>
   );

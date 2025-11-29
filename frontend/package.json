@@ -9,13 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "leaflet": "^1.9.4",
     "next": "16.0.5",
     "next-auth": "^4.24.13",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-toastify": "^11.0.5",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "react-toastify": "^11.0.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
