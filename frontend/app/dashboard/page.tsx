@@ -5,7 +5,13 @@ import { InfoPanel } from "@/components/InfoPanel";
 import MapClient from "@/components/mapClient";
 import ProfileView from "@/components/ProfileView";
 import { useEffect, useRef, useState } from "react";
-import { InfoPanelHandle, LatLng, AtsEvent, MapBounds } from "@/types/types";
+import {
+  InfoPanelHandle,
+  LatLng,
+  AtsEvent,
+  MapBounds,
+  eventType,
+} from "@/types/types";
 import { useSession } from "next-auth/react";
 
 const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
@@ -23,6 +29,9 @@ export default function DashboardPage() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const [eventsError, setEventsError] = useState<string | null>(null);
+
+  const [myEvents, setMyEvents] = useState<eventType[]>([]);
+  const [hasLoadedMyEvents, setHasLoadedMyEvents] = useState(false);
 
   const { data: session, status } = useSession();
 
@@ -112,6 +121,13 @@ export default function DashboardPage() {
     fetchEvents();
   }, [mapBounds]);
 
+  useEffect(() => {
+    if (hasLoadedMyEvents) return;
+
+    // Fetch user's events here and set them to state
+    // TODO!!!
+  }, [hasLoadedMyEvents]);
+
   const handleConfirmAdd = () => {
     if (!draftPosition) return;
 
@@ -132,7 +148,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="grid grid-cols-2 h-screen">
+    <div className="grid grid-cols-[2fr_3fr] h-screen">
       <main className="shadow-2xl rounded-xl z-50 bg-white h-screen overflow-y-auto ">
         <header className="flex justify-between items-center w-full sticky top-0 z-1000 bg-white shadow-md px-6 py-4 mb-4">
           <img

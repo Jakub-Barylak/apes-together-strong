@@ -1,4 +1,6 @@
 import type { eventType } from "@/types/types";
+import { StarIcon } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
 export default function EventTile({
   event,
@@ -15,7 +17,11 @@ export default function EventTile({
         className="h-30 w-auto max-w-60 rounded-xl"
       />
       <div className="flex flex-col justify-center">
-        <h3 className="text-lg font-bold">{event.title}</h3>
+        <span className="inline-flex items-center">
+          <h3 className="text-lg font-bold">{event.title}</h3>
+          <StarIcon className="h-6 w-6 text-ats-yellow-500 inline-block ml-2" />
+          <StarIconSolid className="h-6 w-6 text-ats-yellow-500 inline-block ml-2" />
+        </span>
         <p className="text-sm text-gray-600">Hosted by: {event.host}</p>
       </div>
       <button
