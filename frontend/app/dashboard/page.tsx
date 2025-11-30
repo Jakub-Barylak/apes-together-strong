@@ -52,6 +52,8 @@ export default function DashboardPage() {
 	const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
 	const [recommendedEvents, setRecommendedEvents] = useState<any[]>([]);
+	const [nearbyEvents, setNearbyEvents] = useState<any[]>([]);
+	const [userPos, setUserPos] = useState<LatLng | null>(null);
 
 	const [tags, setTags] = useState<Tag[]>([]);
 	const [centerRequest, setCenterRequest] = useState<{
@@ -206,6 +208,56 @@ export default function DashboardPage() {
 		}
 		fetchEvents();
 	}, [mapBounds]);
+
+	useEffect(() => {
+		if (!navigator.geolocation) {
+			console.log("Geolocation is not supported by your browser");
+			return;
+		}
+
+		navigator.geolocation.getCurrentPosition(
+			(pos) => {
+				console.log("User position:", pos);
+				const { latitude, longitude, accuracy } = pos.coords;
+				setUserPos([latitude, longitude]);
+			},
+			(err) => {
+				console.warn("Unable to retrieve your location", err);
+			},
+			{ enableHighAccuracy: true, timeout: 10000 }
+		);
+	}, []);
+
+	useEffect(() => {
+		if (status !== "authenticated") return;
+		fetchNearbyEvents();
+	}, [userPos, session, status]);
+
+	const fetchNearbyEvents = async () => {
+		if (!session) return;
+		if (!API_HOST) {
+			console.error("NEXT_PUBLIC_API_HOST is not set");
+			return;
+		}
+		try {
+			const url = `${API_HOST}/events?lat=${userPos?.[0]}&lon=${userPos?.[1]}&distance=10`;
+			const response = await fetch(url, {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session.accessToken}`,
+				},
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			const data: any[] = await response.json();
+			console.log("Nearby events:", data);
+			setNearbyEvents(data);
+		} catch (error) {
+			console.error("Error fetching nearby events:", error);
+		}
+	};
 
 	const updateSelection = async (event: eventType) => {
 		if (!session) return;
@@ -490,7 +542,7 @@ export default function DashboardPage() {
 						<h2 className="text-ats-green-500 font-extrabold text-2xl">
 							Events nearby
 						</h2>
-						{events.map((event, index) => {
+						{nearbyEvents.map((event, index) => {
 							// let isStarred = false;
 							// myEvents.forEach(myEvent => {
 							// 	if (event.id === myEvent.id && parseInt(session.user.id) !== myEvent.organizer) {
@@ -502,8 +554,8 @@ export default function DashboardPage() {
 								date: event.date,
 								description: event.description,
 								id: event.id,
-								latitude: event.position[0],
-								longitude: event.position[1],
+								latitude: event.latitude,
+								longitude: event.longitude,
 								location_name: event.location_name,
 								tags: event.tags,
 								title: event.title,
