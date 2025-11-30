@@ -123,8 +123,8 @@ export default function DashboardPage() {
 		fetchEvents();
 	}, [mapBounds]);
 
+	// Fetching all tags
 	useEffect(() => {
-		// TODO: fetch all tags
 		const fetchTags = async () => {
 			try {
 				if (status === "loading") return;
@@ -148,6 +148,14 @@ export default function DashboardPage() {
 
 		fetchTags();
 	}, [status]);
+
+	useEffect(() => {
+		setTitle("");
+		setDescription("");
+		setLocationName("");
+		setDate(null);
+		setSelectedTagIds([]);
+	}, [draftPosition]);
 
 	const handleConfirmAdd = async (e: FormEvent) => {
 		e.preventDefault();
