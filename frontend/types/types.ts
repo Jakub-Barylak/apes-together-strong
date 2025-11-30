@@ -69,3 +69,12 @@ export type MapBounds = {
   e: number;
   w: number;
 };
+
+export type DraftEvent = {
+	title: string;
+	description: string;
+	date: Date | null;
+	latitude: number;
+	longitude: number;
+	location_name: string;
+};
