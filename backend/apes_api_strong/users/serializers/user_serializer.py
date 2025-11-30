@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
             "password",
             "bananas",
             "personality",
+            "events",
             "tags",
         ]
         read_only_fields = ["id"]
