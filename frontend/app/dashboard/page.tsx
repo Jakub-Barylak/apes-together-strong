@@ -330,8 +330,9 @@ export default function DashboardPage() {
 					Authorization: `Bearer ${session?.accessToken}`,
 				},
 			});
-			const recommendedEvents = await res.json();
-			setRecommendedEvents(recommendedEvents)
+			const recommendedEvents_res = await res.json();
+			console.log(recommendedEvents_res);
+			setRecommendedEvents(recommendedEvents_res)
 		}
 
 		if (status === "loading") {
@@ -363,23 +364,14 @@ export default function DashboardPage() {
 						</h2>
 						<div className="overflow-x-scroll -mx-4">
 							<div className="flex gap-4 py-2 h-50 w-fit px-4">
-								{/* card-scroll */}
-								{/* {[...Array(5)].map((_, index) => (
-									<Card
-										key={index}
-										title="Sample Title"
-										author="Name"
-										imageUrl="https://images.pexels.com/photos/33129/popcorn-movie-party-entertainment.jpg"
-										sponsored={index % 2 === 0}
-									/>
-								))} */}
 								{
 									recommendedEvents.map((event, index) => {
 										return <Card
 											key={index}
 											title={event.title}
-											author={event.organizer}
+											author={event.title}
 											imageUrl="https://images.pexels.com/photos/33129/popcorn-movie-party-entertainment.jpg"
+											sponsored={index === 0}
 										/>
 									})
 								}
