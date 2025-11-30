@@ -6,7 +6,6 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { InfoPanelHandle, LatLng, AtsEvent, MapBounds, DraftEvent } from "@/types/types";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
-import { LargeNumberLike } from "crypto";
 import { BananaButton } from "@/components/BananaButton";
 
 const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
@@ -161,7 +160,8 @@ export default function DashboardPage() {
 			date,
 			latitude: draftPosition[0],
 			longitude: draftPosition[1],
-			location_name: locationName
+			location_name: locationName,
+			tags: selectedTagIds
 		};
 		const eventBody = JSON.stringify(newEvent);
 
