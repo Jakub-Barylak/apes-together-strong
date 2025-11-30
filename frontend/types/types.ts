@@ -64,10 +64,15 @@ export type AtsEvent = {
 };
 
 export type MapBounds = {
-	n: number;
-	s: number;
-	e: number;
-	w: number;
+  n: number;
+  s: number;
+  e: number;
+  w: number;
+};
+
+export type MapClientHandle = {
+  centerOn: (position: LatLng, zoom?: number) => void;
+  centerOnWithFly?: (position: LatLng, zoom?: number) => void;
 };
 
 export type DraftEvent = {

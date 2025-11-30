@@ -1,275 +1,428 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+	forwardRef,
+	useEffect,
+	useImperativeHandle,
+	useRef,
+	useState,
+} from "react";
 import "leaflet/dist/leaflet.css";
 import { greenIcon, blueIcon, redIcon } from "@/assets/mapMarkers";
-import { AtsEvent, LatLng, MapLibs } from "@/types/types";
+import { AtsEvent, LatLng, MapClientHandle, MapLibs } from "@/types/types";
 
 const DEFAULT_CENTER: LatLng = [50.288636634077264, 18.677458290326385]; // AEI
 
-export default function MapClient({
-  events,
-  draftPosition,
-  onClickCallback,
-  onPanCallback,
-  onMarkerCallback,
-}: {
-  events: AtsEvent[];
-  draftPosition: LatLng | null;
-  onClickCallback: (latlng: LatLng) => void;
-  onPanCallback: (bounds: any) => void;
-  onMarkerCallback: (event: AtsEvent) => void;
-}) {
-  const [libs, setLibs] = useState<MapLibs | null>(null);
-  const [userPos, setUserPos] = useState<LatLng | null>(null);
-  const [userAccuracy, setUserAccuracy] = useState<number | null>(null);
-  const [initialized, setInitialized] = useState(false);
+const MapClient = forwardRef<
+	MapClientHandle,
+	{
+		events: AtsEvent[];
+		draftPosition: LatLng | null;
+		onClickCallback: (latlng: LatLng) => void;
+		onPanCallback: (bounds: any) => void;
+		onMarkerCallback: (event: AtsEvent) => void;
+		centerTarget?: { position: LatLng; zoom?: number; requestId?: number };
+	}
+>(
+	(
+		{
+			events,
+			draftPosition,
+			onClickCallback,
+			onPanCallback,
+			onMarkerCallback,
+			centerTarget,
+		},
+		ref
+	) => {
+		const [libs, setLibs] = useState<MapLibs | null>(null);
+		const [userPos, setUserPos] = useState<LatLng | null>(null);
+		const [userAccuracy, setUserAccuracy] = useState<number | null>(null);
+		const [initialized, setInitialized] = useState(false);
+			const mapRef = useRef<any | null>(null);
+			const pendingCenterRef = useRef<{
+				position: LatLng;
+				zoom?: number;
+				requestId?: number;
+			} | null>(null);
+			const pendingFlyRef = useRef<{
+				position: LatLng;
+				zoom?: number;
+				requestId?: number;
+			} | null>(null);
+			const lastCenterIdRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+		useEffect(() => {
+			let isMounted = true;
 
-    (async () => {
-      const [L, RL] = await Promise.all([
-        import("leaflet"),
-        import("react-leaflet"),
-      ]);
+			(async () => {
+				const [L, RL] = await Promise.all([
+					import("leaflet"),
+					import("react-leaflet"),
+				]);
 
-      // fix na ikony Leafleta w Next
-      const iconRetinaUrl = (
-        await import("leaflet/dist/images/marker-icon-2x.png")
-      ).default;
-      const iconUrl = (await import("leaflet/dist/images/marker-icon.png"))
-        .default;
-      const shadowUrl = (await import("leaflet/dist/images/marker-shadow.png"))
-        .default;
+				// fix na ikony Leafleta w Next
+				const iconRetinaUrl = (
+					await import("leaflet/dist/images/marker-icon-2x.png")
+				).default;
+				const iconUrl = (
+					await import("leaflet/dist/images/marker-icon.png")
+				).default;
+				const shadowUrl = (
+					await import("leaflet/dist/images/marker-shadow.png")
+				).default;
 
-      // @ts-expect-error – nadpisujemy prywatne pole
-      delete L.Icon.Default.prototype._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl,
-        iconUrl,
-        shadowUrl,
-      });
+				// @ts-expect-error – nadpisujemy prywatne pole
+				delete L.Icon.Default.prototype._getIconUrl;
+				L.Icon.Default.mergeOptions({
+					iconRetinaUrl,
+					iconUrl,
+					shadowUrl,
+				});
 
-      if (!isMounted) return;
+				if (!isMounted) return;
 
-      setLibs({
-        L,
-        MapContainer: RL.MapContainer,
-        TileLayer: RL.TileLayer,
-        Marker: RL.Marker,
-        Popup: RL.Popup,
-        useMap: RL.useMap,
-        Circle: RL.Circle,
-        CircleMarker: RL.CircleMarker,
-      });
-    })();
+				setLibs({
+					L,
+					MapContainer: RL.MapContainer,
+					TileLayer: RL.TileLayer,
+					Marker: RL.Marker,
+					Popup: RL.Popup,
+					useMap: RL.useMap,
+					Circle: RL.Circle,
+					CircleMarker: RL.CircleMarker,
+				});
+			})();
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+			return () => {
+				isMounted = false;
+			};
+		}, []);
 
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      console.log("Geolocation is not supported by your browser");
-      return;
-    }
+		useEffect(() => {
+			if (!navigator.geolocation) {
+				console.log("Geolocation is not supported by your browser");
+				return;
+			}
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        console.log("User position:", pos);
-        const { latitude, longitude, accuracy } = pos.coords;
-        setUserPos([latitude, longitude]);
-        setUserAccuracy(accuracy);
-      },
-      (err) => {
-        console.warn("Unable to retrieve your location", err);
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
-  }, []);
+			navigator.geolocation.getCurrentPosition(
+				(pos) => {
+					console.log("User position:", pos);
+					const { latitude, longitude, accuracy } = pos.coords;
+					setUserPos([latitude, longitude]);
+					setUserAccuracy(accuracy);
+				},
+				(err) => {
+					console.warn("Unable to retrieve your location", err);
+				},
+				{ enableHighAccuracy: true, timeout: 10000 }
+			);
+		}, []);
 
-  // jeszcze się ładuje react-leaflet / leaflet
-  if (!libs) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
-        Loading map…
-      </div>
-    );
-  }
+		// expose imperative API
+		useImperativeHandle(
+			ref,
+			() => ({
+				centerOn(position: LatLng, zoom?: number) {
+					console.log("centerOn called with", position, zoom);
+					if (mapRef.current) {
+						const targetZoom =
+							zoom !== undefined
+								? zoom
+								: (mapRef.current.getZoom?.() ?? 13);
+						mapRef.current.setView(position, targetZoom);
+						return;
+					}
+					console.log("mapRef not ready, queueing center");
+					pendingCenterRef.current = { position, zoom };
+				},
+				centerOnWithFly(position: LatLng, zoom?: number) {
+					if (mapRef.current) {
+						mapRef.current.flyTo(
+							position,
+							zoom ?? mapRef.current.getZoom?.() ?? 13
+						);
+						return;
+					}
+					pendingFlyRef.current = { position, zoom };
+				},
+			}),
+			[]
+		);
 
-  const {
-    MapContainer,
-    TileLayer,
-    Marker,
-    Popup,
-    useMap,
-    Circle,
-    CircleMarker,
-  } = libs;
-  const initialCenter = DEFAULT_CENTER;
+			useEffect(() => {
+				if (!centerTarget) return;
+				const targetId = centerTarget.requestId ?? Date.now();
+				if (lastCenterIdRef.current === targetId) return;
 
-  function RecenterOnUser({ position }: { position: LatLng }) {
-    const map = useMap();
-    const [hasCentered, setHasCentered] = useState(false);
+				console.log("centerTarget received", centerTarget, "map ready?", !!mapRef.current);
+				if (pendingFlyRef.current) {
+					// prefer applying fly if previously requested
+					const { position, zoom, requestId } = pendingFlyRef.current;
+					if (mapRef.current) {
+						mapRef.current.flyTo(
+							position,
+							zoom ?? mapRef.current.getZoom?.() ?? 13
+						);
+						lastCenterIdRef.current = requestId ?? targetId;
+						console.log("Applied fly from pending via centerTarget");
+						pendingFlyRef.current = null;
+						return;
+					}
+				}
+				if (mapRef.current) {
+					mapRef.current.setView(
+						centerTarget.position,
+						centerTarget.zoom ?? mapRef.current.getZoom?.() ?? 13
+					);
+					lastCenterIdRef.current = targetId;
+					console.log("Applied centerTarget immediately");
+					return;
+				}
+				pendingCenterRef.current = {
+					position: centerTarget.position,
+					zoom: centerTarget.zoom,
+					requestId: targetId,
+				};
+				console.log("Queued centerTarget (map not ready)", centerTarget);
+			}, [centerTarget]);
 
-    useEffect(() => {
-      if (!position || hasCentered) return;
-      map.setView(position, 13);
-    }, [map, position, hasCentered]);
+		// jeszcze się ładuje react-leaflet / leaflet
+		if (!libs) {
+			return (
+				<div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+					Loading map…
+				</div>
+			);
+		}
 
-    return null;
-  }
+		const {
+			MapContainer,
+			TileLayer,
+			Marker,
+			Popup,
+			useMap,
+			Circle,
+			CircleMarker,
+		} = libs;
+		const initialCenter = DEFAULT_CENTER;
 
-  function OneTimeCenterOnUser() {
-    const map = useMap();
+			function RecenterOnUser({ position }: { position: LatLng }) {
+			const map = useMap();
+			const [hasCentered, setHasCentered] = useState(false);
 
-    useEffect(() => {
-      if (userPos && !initialized) {
-        map.setView(userPos, 13);
-        setInitialized(true);
-      }
-    }, [map, userPos, initialized]);
+			useEffect(() => {
+				if (!position || hasCentered) return;
+				map.setView(position, 13);
+			}, [map, position, hasCentered]);
 
-    return null;
-  }
+			return null;
+		}
 
-  function MapClickHandler({ onClick }: { onClick: (latlng: LatLng) => void }) {
-    const map = useMap();
-    let start: { x: number; y: number } | null = null;
+		function OneTimeCenterOnUser() {
+			const map = useMap();
 
-    useEffect(() => {
-      const handleMouseDown = (e: any) => {
-        start = { x: e.originalEvent.clientX, y: e.originalEvent.clientY };
-      };
+			useEffect(() => {
+				if (userPos && !initialized) {
+					map.setView(userPos, 13);
+					setInitialized(true);
+				}
+			}, [map, userPos, initialized]);
 
-      const handleMouseUp = (e: any) => {
-        if (!start) return;
+			return null;
+		}
 
-        const target = e.originalEvent?.target as HTMLElement | null;
+		function MapClickHandler({
+			onClick,
+		}: {
+			onClick: (latlng: LatLng) => void;
+		}) {
+			const map = useMap();
+			let start: { x: number; y: number } | null = null;
 
-        if (target?.closest(".leaflet-marker-icon, .leaflet-interactive")) {
-          start = null;
-          return;
-        }
+			useEffect(() => {
+				const handleMouseDown = (e: any) => {
+					start = {
+						x: e.originalEvent.clientX,
+						y: e.originalEvent.clientY,
+					};
+				};
 
-        const dx = Math.abs(e.originalEvent.clientX - start.x);
-        const dy = Math.abs(e.originalEvent.clientY - start.y);
+				const handleMouseUp = (e: any) => {
+					if (!start) return;
 
-        if (dx < 5 && dy < 5) {
-          const { lat, lng } = e.latlng;
-          onClick([lat, lng]);
-        }
+					const target = e.originalEvent
+						?.target as HTMLElement | null;
 
-        start = null;
-      };
+					if (
+						target?.closest(
+							".leaflet-marker-icon, .leaflet-interactive"
+						)
+					) {
+						start = null;
+						return;
+					}
 
-      map.on("mousedown", handleMouseDown);
-      map.on("mouseup", handleMouseUp);
+					const dx = Math.abs(e.originalEvent.clientX - start.x);
+					const dy = Math.abs(e.originalEvent.clientY - start.y);
 
-      return () => {
-        map.off("mousedown", handleMouseDown);
-        map.off("mouseup", handleMouseUp);
-      };
-    }, [map, onClick]);
+					if (dx < 5 && dy < 5) {
+						const { lat, lng } = e.latlng;
+						onClick([lat, lng]);
+					}
 
-    return null;
-  }
+					start = null;
+				};
 
-  function MapBoundsListener({
-    onChange,
-  }: {
-    onChange: (bounds: any) => void;
-  }) {
-    const map = useMap();
+				map.on("mousedown", handleMouseDown);
+				map.on("mouseup", handleMouseUp);
 
-    useEffect(() => {
-      const update = () => {
-        const b = map.getBounds();
-        onChange(b);
-      };
+				return () => {
+					map.off("mousedown", handleMouseDown);
+					map.off("mouseup", handleMouseUp);
+				};
+			}, [map, onClick]);
 
-      map.on("moveend", update);
-      map.on("zoomend", update);
+			return null;
+		}
 
-      update();
+		function MapBoundsListener({
+			onChange,
+		}: {
+			onChange: (bounds: any) => void;
+		}) {
+			const map = useMap();
 
-      return () => {
-        map.off("moveend", update);
-        map.off("zoomend", update);
-      };
-    }, [map, onChange]);
+			useEffect(() => {
+				const update = () => {
+					const b = map.getBounds();
+					onChange(b);
+				};
 
-    return null;
-  }
+				map.on("moveend", update);
+				map.on("zoomend", update);
 
-  return (
-    <div className="h-full w-full">
-      <MapContainer
-        center={initialCenter} // podmień na swoje coords
-        zoom={13}
-        scrollWheelZoom
-        className="h-full w-full"
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        {events.map((event) => (
-          <Marker
-            key={event.id}
-            position={event.position}
-            icon={blueIcon}
-            eventHandlers={{
-              click() {
-                onMarkerCallback(event);
-              },
-            }}
-          />
-        ))}
-        {draftPosition && (
-          <>
-            <Marker position={draftPosition} icon={redIcon} />
-          </>
-        )}
-        <Marker
-          key={-1}
-          position={DEFAULT_CENTER}
-          icon={greenIcon}
-          eventHandlers={{
-            click() {
-              onMarkerCallback({ id: -1, position: DEFAULT_CENTER });
-            },
-          }}
-        >
-          <Popup>Here be Apes 🐒</Popup>
-        </Marker>
-        <MapClickHandler onClick={onClickCallback} />
-        <MapBoundsListener onChange={onPanCallback} />
-        {userPos && (
-          <>
-            <CircleMarker
-              center={userPos}
-              radius={6}
-              pathOptions={{
-                color: "#2563eb",
-                fillColor: "#3b82f6",
-                fillOpacity: 1,
-                weight: 2,
-              }}
-            />
-            <Circle
-              center={userPos}
-              radius={userAccuracy ?? 500} // metry; fallback 500m
-              pathOptions={{
-                color: "#2563eb",
-                fillColor: "#3b82f6",
-                fillOpacity: 0.15,
-                weight: 1,
-              }}
-            />
-            <OneTimeCenterOnUser />
-          </>
-        )}
-      </MapContainer>
-    </div>
-  );
-}
+				update();
+
+				return () => {
+					map.off("moveend", update);
+					map.off("zoomend", update);
+				};
+			}, [map, onChange]);
+
+			return null;
+		}
+
+		return (
+			<div className="h-full w-full">
+				<MapContainer
+					center={initialCenter} // podmień na swoje coords
+					zoom={13}
+					scrollWheelZoom
+					//@ts-ignore
+					whenCreated={(mapInstance) => {
+						mapRef.current = mapInstance;
+						console.log("Map created", mapInstance);
+						if (pendingCenterRef.current) {
+							const { position, zoom, requestId } = pendingCenterRef.current;
+							const targetZoom =
+								zoom !== undefined
+									? zoom
+									: mapInstance.getZoom?.() ?? 13;
+							mapInstance.setView(position, targetZoom);
+							console.log(
+								"Applied pending center",
+								position,
+								targetZoom
+							);
+							if (requestId !== undefined) {
+								lastCenterIdRef.current = requestId;
+							}
+							pendingCenterRef.current = null;
+						}
+						if (pendingFlyRef.current) {
+							const { position, zoom, requestId } = pendingFlyRef.current;
+							mapInstance.flyTo(
+								position,
+								zoom ?? mapInstance.getZoom?.() ?? 13
+							);
+							console.log("Applied pending fly", position, zoom);
+							if (requestId !== undefined) {
+								lastCenterIdRef.current = requestId;
+							}
+							pendingFlyRef.current = null;
+						}
+					}}
+					className="h-full w-full"
+				>
+					<TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+					{events.map((event) => (
+						<Marker
+							key={event.id}
+							position={event.position}
+							icon={blueIcon}
+							eventHandlers={{
+								click() {
+									onMarkerCallback(event);
+								},
+							}}
+						/>
+					))}
+					{draftPosition && (
+						<>
+							<Marker
+								position={draftPosition}
+								icon={redIcon}
+							/>
+						</>
+					)}
+					<Marker
+						key={-1}
+						position={DEFAULT_CENTER}
+						icon={greenIcon}
+						eventHandlers={{
+							click() {
+								//@ts-ignore
+								onMarkerCallback({
+									id: -1,
+									position: DEFAULT_CENTER,
+								});
+							},
+						}}
+					>
+						<Popup>Here be Apes 🐒</Popup>
+					</Marker>
+					<MapClickHandler onClick={onClickCallback} />
+					<MapBoundsListener onChange={onPanCallback} />
+					{userPos && (
+						<>
+							<CircleMarker
+								center={userPos}
+								radius={6}
+								pathOptions={{
+									color: "#2563eb",
+									fillColor: "#3b82f6",
+									fillOpacity: 1,
+									weight: 2,
+								}}
+							/>
+							<Circle
+								center={userPos}
+								radius={userAccuracy ?? 500} // metry; fallback 500m
+								pathOptions={{
+									color: "#2563eb",
+									fillColor: "#3b82f6",
+									fillOpacity: 0.15,
+									weight: 1,
+								}}
+							/>
+							<OneTimeCenterOnUser />
+						</>
+					)}
+				</MapContainer>
+			</div>
+		);
+	}
+);
+
+export default MapClient;
