@@ -51,6 +51,8 @@ export default function DashboardPage() {
 	const [date, setDate] = useState<Date | null>(null);
 	const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
+	const [recommendedEvents, setRecommendedEvents] = useState<any[]>([]);
+
 	const [tags, setTags] = useState<Tag[]>([]);
 	const [centerRequest, setCenterRequest] = useState<{
 		position: LatLng;
@@ -388,6 +390,27 @@ export default function DashboardPage() {
 		addRef.current?.close();
 	};
 
+	useEffect(() => {
+		const fetchReccomended = async () => {
+			const res = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/events/reccommendations/`, {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session?.accessToken}`,
+				},
+			});
+			const recommendedEvents_res = await res.json();
+			console.log(recommendedEvents_res);
+			setRecommendedEvents(recommendedEvents_res)
+		}
+
+		if (status === "loading") {
+			return;
+		}
+
+		fetchReccomended();
+	}, [status]);
+
 	if (!session) {
 		return <div>Loading...</div>;
 	}
@@ -410,16 +433,17 @@ export default function DashboardPage() {
 						</h2>
 						<div className="overflow-x-scroll -mx-4">
 							<div className="flex gap-4 py-2 h-50 w-fit px-4">
-								{/* card-scroll */}
-								{[...Array(5)].map((_, index) => (
-									<Card
-										key={index}
-										title="Sample Title"
-										author="Name"
-										imageUrl="https://images.pexels.com/photos/33129/popcorn-movie-party-entertainment.jpg"
-										sponsored={index % 2 === 0}
-									/>
-								))}
+								{
+									recommendedEvents.map((event, index) => {
+										return <Card
+											key={index}
+											title={event.title}
+											author={event.title}
+											imageUrl="https://images.pexels.com/photos/33129/popcorn-movie-party-entertainment.jpg"
+											sponsored={index === 0}
+										/>
+									})
+								}
 							</div>
 						</div>
 					</div>
@@ -470,7 +494,35 @@ export default function DashboardPage() {
 						<h2 className="text-ats-green-500 font-extrabold text-2xl">
 							Events nearby
 						</h2>
-						EVENTS NEARBY LIST
+						{events.map((event, index) => {
+							// let isStarred = false;
+							// myEvents.forEach(myEvent => {
+							// 	if (event.id === myEvent.id && parseInt(session.user.id) !== myEvent.organizer) {
+							// 		isStarred = true;
+							// 	}
+							// });
+
+							const newEvent: eventType = {
+								date: event.date,
+								description: event.description,
+								id: event.id,
+								latitude: event.position[0],
+								longitude: event.position[1],
+								location_name: event.location_name,
+								tags: event.tags,
+								title: event.title,
+								organizer: event.organizer,
+								personality: [], // TODO map
+								starred: false
+							}
+							return <EventTile key={index}
+								event={newEvent}
+								onDetailsClick={() => console.log("Detailed clicked")}
+								onStarClick={() => updateSelection(newEvent)}
+							/>
+						})
+						}
+
 					</div>
 				</div>
 			</main>
@@ -639,10 +691,10 @@ export default function DashboardPage() {
 													setSelectedTagIds((prev) =>
 														prev.includes(tag.id)
 															? prev.filter(
-																	(id) =>
-																		id !==
-																		tag.id
-																)
+																(id) =>
+																	id !==
+																	tag.id
+															)
 															: [...prev, tag.id]
 													);
 												}}
