@@ -25,6 +25,7 @@ class EventSerializer(serializers.ModelSerializer):
             "longitude",
             "location_name",
             "organizer",
+            "is_sponsored",
             "tags",
             "personality",
         ]
