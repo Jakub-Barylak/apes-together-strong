@@ -39,6 +39,13 @@
 	form {
 		background-color: oklch(20.8% 0.042 265.755);
 	}
+	main,
+	header {
+		background-color: oklch(12.9% 0.042 264.695);
+	}
+	.leaflet-tile-container {
+		filter: brightness(0.8);
+	}
 }
 
 body {

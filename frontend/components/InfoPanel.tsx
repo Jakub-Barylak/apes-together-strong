@@ -24,7 +24,7 @@ export const InfoPanel = forwardRef<InfoPanelHandle, InfoPanelProps>(
 		if (!isVisible) return null;
 
 		return (
-			<div className="max-h-[80vh] min-h-[35%] absolute left-4 bottom-4 w-[calc(100%-2rem)] bg-white rounded-2xl z-1000 p-4 shadow-2xl flex flex-col gap-2 overflow-hidden">
+			<div className="max-h-[80vh] min-h-[35%] absolute left-4 bottom-4 w-[calc(100%-2rem)] bg-white dark:bg-slate-950 rounded-2xl z-1000 p-4 shadow-2xl flex flex-col gap-2 overflow-hidden">
 				<header>
 					<div className="text-2xl">{headerComponent}</div>
 					<XMarkIcon

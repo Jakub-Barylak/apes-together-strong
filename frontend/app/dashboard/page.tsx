@@ -493,7 +493,7 @@ export default function DashboardPage() {
 
 	return (
 		<div className="grid grid-cols-[2fr_3fr] h-screen">
-			<main className="shadow-2xl rounded-xl z-50 bg-white h-screen overflow-y-auto ">
+			<main className="shadow-2xl rounded-r-2xl z-50 bg-white h-screen overflow-y-auto ">
 				<header className="flex justify-between items-center w-full sticky top-0 z-1000 bg-white shadow-md px-6 py-4 mb-4">
 					<img
 						src="/logo.png"
@@ -504,7 +504,7 @@ export default function DashboardPage() {
 				</header>
 				<div className="flex flex-col gap-2 p-4">
 					<div>
-						<h2 className="text-ats-green-500 font-extrabold text-2xl">
+						<h2 className="text-ats-green-500 dark:text-ats-yellow-500 font-extrabold text-2xl">
 							Recommendations
 						</h2>
 						<div className="overflow-x-scroll -mx-4">
@@ -524,7 +524,7 @@ export default function DashboardPage() {
 						</div>
 					</div>
 					<div>
-						<h2 className="text-ats-green-500 font-extrabold text-2xl">
+						<h2 className="text-ats-green-500 dark:text-ats-yellow-500 font-extrabold text-2xl">
 							Your events
 						</h2>
 						<div className="flex flex-col gap-2">
@@ -539,7 +539,7 @@ export default function DashboardPage() {
 						</div>
 					</div>
 					<div>
-						<h2 className="text-ats-green-500 font-extrabold text-2xl">
+						<h2 className="text-ats-green-500 dark:text-ats-yellow-500 font-extrabold text-2xl">
 							Events nearby
 						</h2>
 						{nearbyEvents.map((event, index) => {
@@ -744,10 +744,10 @@ export default function DashboardPage() {
 													setSelectedTagIds((prev) =>
 														prev.includes(tag.id)
 															? prev.filter(
-																	(id) =>
-																		id !==
-																		tag.id
-																)
+																(id) =>
+																	id !==
+																	tag.id
+															)
 															: [...prev, tag.id]
 													);
 												}}
