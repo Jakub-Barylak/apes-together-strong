@@ -1,0 +1,18 @@
+export const PERSONALITY_TYPES = [
+	{ id: 1, code: "INTJ", label: "Architect (INTJ)" },
+	{ id: 2, code: "INTP", label: "Logician (INTP)" },
+	{ id: 3, code: "ENTJ", label: "Commander (ENTJ)" },
+	{ id: 4, code: "ENTP", label: "Debater (ENTP)" },
+	{ id: 5, code: "INFJ", label: "Advocate (INFJ)" },
+	{ id: 6, code: "INFP", label: "Mediator (INFP)" },
+	{ id: 7, code: "ENFJ", label: "Protagonist (ENFJ)" },
+	{ id: 8, code: "ENFP", label: "Campaigner (ENFP)" },
+	{ id: 9, code: "ISTJ", label: "Logistician (ISTJ)" },
+	{ id: 10, code: "ISFJ", label: "Defender (ISFJ)" },
+	{ id: 11, code: "ESTJ", label: "Executive (ESTJ)" },
+	{ id: 12, code: "ESFJ", label: "Consul (ESFJ)" },
+	{ id: 13, code: "ISTP", label: "Virtuoso (ISTP)" },
+	{ id: 14, code: "ISFP", label: "Adventurer (ISFP)" },
+	{ id: 15, code: "ESTP", label: "Entrepreneur (ESTP)" },
+	{ id: 16, code: "ESFP", label: "Entertainer (ESFP)" },
+];

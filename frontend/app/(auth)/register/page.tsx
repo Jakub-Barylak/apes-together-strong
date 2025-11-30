@@ -7,25 +7,7 @@ import { useRouter } from "next/navigation";
 import { BananaButton } from "@/components/BananaButton";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
-
-const PERSONALITY_TYPES = [
-	{ id: 1, code: "INTJ", label: "Architect (INTJ)" },
-	{ id: 2, code: "INTP", label: "Logician (INTP)" },
-	{ id: 3, code: "ENTJ", label: "Commander (ENTJ)" },
-	{ id: 4, code: "ENTP", label: "Debater (ENTP)" },
-	{ id: 5, code: "INFJ", label: "Advocate (INFJ)" },
-	{ id: 6, code: "INFP", label: "Mediator (INFP)" },
-	{ id: 7, code: "ENFJ", label: "Protagonist (ENFJ)" },
-	{ id: 8, code: "ENFP", label: "Campaigner (ENFP)" },
-	{ id: 9, code: "ISTJ", label: "Logistician (ISTJ)" },
-	{ id: 10, code: "ISFJ", label: "Defender (ISFJ)" },
-	{ id: 11, code: "ESTJ", label: "Executive (ESTJ)" },
-	{ id: 12, code: "ESFJ", label: "Consul (ESFJ)" },
-	{ id: 13, code: "ISTP", label: "Virtuoso (ISTP)" },
-	{ id: 14, code: "ISFP", label: "Adventurer (ISFP)" },
-	{ id: 15, code: "ESTP", label: "Entrepreneur (ESTP)" },
-	{ id: 16, code: "ESFP", label: "Entertainer (ESFP)" },
-];
+import { PERSONALITY_TYPES } from "@/assets/personalityTypes";
 
 export default function RegisterPage() {
 	const [loading, setLoading] = useState(false);
@@ -42,19 +24,22 @@ export default function RegisterPage() {
 
 		try {
 			const body = JSON.stringify({
-				"username": username,
-				"email": email,
-				"password": password,
-				"personality": [parseInt(personality)],
+				username: username,
+				email: email,
+				password: password,
+				personality: [parseInt(personality)],
 			});
 
-			const res = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/users/`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: body,
-			});
+			const res = await fetch(
+				`${process.env.NEXT_PUBLIC_API_HOST}/users/`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: body,
+				}
+			);
 
 			if (!res.ok) {
 				// TODO: lepszy opis
@@ -69,17 +54,15 @@ export default function RegisterPage() {
 				redirect: false,
 				email,
 				password,
-				callbackUrl: ""
-			})
+				callbackUrl: "",
+			});
 
 			if (result?.error) {
-				router.push("/login?callbackUrl=/update_profile")
+				router.push("/login?callbackUrl=/update_profile");
 				return;
 			}
 
-
 			router.push("/update_profile");
-
 		} catch (error) {
 			console.log(error);
 			toast.error("Nie udało się zarejestrować");
@@ -142,7 +125,10 @@ export default function RegisterPage() {
 					/>
 				</div>
 
-				<label htmlFor="personality" className="text-sm font-medium">
+				<label
+					htmlFor="personality"
+					className="text-sm font-medium"
+				>
 					Personality type (16Personalities)
 				</label>
 
@@ -158,14 +144,21 @@ export default function RegisterPage() {
 					>
 						<option value="">Select your type...</option>
 						{PERSONALITY_TYPES.map((type) => (
-							<option key={type.id} value={type.id}>
+							<option
+								key={type.id}
+								value={type.id}
+							>
 								{type.label}
 							</option>
 						))}
 					</select>
 				</div>
 
-				<BananaButton label="Register" loadingLabel="Loading..." loading={loading} />
+				<BananaButton
+					label="Register"
+					loadingLabel="Loading..."
+					loading={loading}
+				/>
 			</form>
 		</div>
 	);
