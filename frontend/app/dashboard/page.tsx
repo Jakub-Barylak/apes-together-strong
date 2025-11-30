@@ -11,6 +11,7 @@ import {
 	AtsEvent,
 	MapBounds,
 	DraftEvent,
+	MapClientHandle,
 	eventType,
 	userType,
 	Tag,
@@ -25,6 +26,7 @@ const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
 export default function DashboardPage() {
 	const infoRef = useRef<InfoPanelHandle | null>(null);
 	const addRef = useRef<InfoPanelHandle | null>(null);
+	const mapRef = useRef<MapClientHandle | null>(null);
 
 	const boundsDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -50,6 +52,48 @@ export default function DashboardPage() {
 	const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
 	const [tags, setTags] = useState<Tag[]>([]);
+	const [centerRequest, setCenterRequest] = useState<{
+		position: LatLng;
+		zoom?: number;
+		requestId: number;
+	} | null>(null);
+
+	const getLatLngFromEvent = (
+		event: Partial<AtsEvent> & Partial<eventType>
+	): LatLng | null => {
+		if (event.position && Array.isArray(event.position)) {
+			return event.position as LatLng;
+		}
+		if (
+			event.latitude !== undefined &&
+			event.longitude !== undefined &&
+			event.latitude !== null &&
+			event.longitude !== null
+		) {
+			const lat = Number(event.latitude);
+			const lng = Number(event.longitude);
+			if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+				return [lat, lng];
+			}
+		}
+		return null;
+	};
+
+	const toAtsEvent = (event: eventType): AtsEvent => {
+		// @ts-ignore
+		const coords = getLatLngFromEvent(event) ?? [0, 0];
+		return {
+			id: event.id,
+			title: event.title,
+			description: event.description,
+			date: event.date,
+			position: coords,
+			organizer: event.organizer ?? Number(event.host) ?? 0,
+			tags: event.tags ?? [],
+			location_name: event.location_name,
+			personality: (event.personality ?? []).map((p) => p.toString()),
+		};
+	};
 
 	const handleMapBoundsChange = (bounds: any) => {
 		if (boundsDebounceRef.current) {
@@ -82,6 +126,31 @@ export default function DashboardPage() {
 				return newBounds;
 			});
 		}, 300);
+	};
+
+	const joinEvent = async (eventId: number) => {
+		if (!session) return;
+		if (!API_HOST) {
+			console.error("NEXT_PUBLIC_API_HOST is not set");
+			return;
+		}
+		const url = `${API_HOST}/events/${eventId}/join/`;
+		try {
+			const response = await fetch(url, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session.accessToken}`,
+				},
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+		} catch (error) {
+			console.error("Error joining event:", error);
+		} finally {
+			fetchMyEvents();
+		}
 	};
 
 	const fetchEvents = async () => {
@@ -364,7 +433,33 @@ export default function DashboardPage() {
 									key={index}
 									event={event}
 									onDetailsClick={() => {
-										console.log("Details clicked");
+										const coords =
+											//@ts-ignore
+											getLatLngFromEvent(event);
+										if (coords) {
+											console.log(
+												"Centering on",
+												coords,
+												event
+											);
+											if (!mapRef.current) {
+												console.warn(
+													"Map ref not ready"
+												);
+											}
+											setCenterRequest({
+												position: coords,
+												zoom: 15,
+												requestId: Date.now(),
+											});
+										} else {
+											console.warn(
+												"Missing coords for event",
+												event
+											);
+										}
+										setCurrentEvent(toAtsEvent(event));
+										infoRef.current?.open();
 									}}
 									onStarClick={() => updateSelection(event)}
 								/>
@@ -382,6 +477,9 @@ export default function DashboardPage() {
 			<div className="relative">
 				<div className="w-[calc(100%+0.5rem)] h-full overflow-hidden backdrop-blur-xl border -ml-2">
 					<MapClient
+						ref={mapRef}
+						// @ts-ignore
+						centerTarget={centerRequest}
 						events={events}
 						draftPosition={draftPosition}
 						onClickCallback={(latlng) => {
@@ -410,6 +508,9 @@ export default function DashboardPage() {
 						<EventDetails
 							event={currentEvent}
 							tags={tags}
+							onJoin={() => {
+								joinEvent(currentEvent!.id);
+							}}
 						/>
 					</div>
 				</InfoPanel>
@@ -427,7 +528,7 @@ export default function DashboardPage() {
 				>
 					{/* TODO: add tags */}
 					<form
-						className="h-full flex flex-col gap-4"
+						className="flex flex-col gap-4 overflow-y-auto"
 						onSubmit={handleConfirmAdd}
 					>
 						{/* Tytuł */}
