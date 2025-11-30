@@ -40,6 +40,7 @@ class EventViewSet(viewsets.ModelViewSet):
                         - Separate multiple personality types with commas, no extra text.
                         - Remove duplicates and ignore case differences.
                         - You have to choose at least one personality type.
+                        - If unsure, make the best possible guess based on the description provided.
                 """},
                 {"role": "user", "content": f"""Event description: "{description}" Select the personality types that best match this event."""}
             ],
@@ -133,4 +134,26 @@ class EventViewSet(viewsets.ModelViewSet):
 
         serializer = EventOverviewSerializer(data)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='reccommendations')
+    def recommendations(self, request):
+        user = request.user
+        personalities = user.personality.all()
+
+        sponsored_event = (
+            Event.objects
+            .filter(is_sponsored=True)
+            .order_by('-date')[:1]
+        )
+
+        personal_events = Event.objects.filter(
+            personality__in=personalities
+        )
+
+        events = (sponsored_event | personal_events).distinct()
+
+        serializer = self.get_serializer(events, many=True)
+        return Response(serializer.data)
+
+  
 
