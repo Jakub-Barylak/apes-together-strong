@@ -6,9 +6,9 @@ declare module "next-auth" {
 	interface User {
 		id: string;
 		email: string;
-		bananas: int;
-		personality: int[];
-		tags: int[];
+		bananas: number;
+		personality: number[];
+		tags: number[];
 		accessToken: string;
 		refreshToken: string;
 	}
@@ -17,9 +17,9 @@ declare module "next-auth" {
 		user: {
 			id: string;
 			email: string;
-			bananas: int;
-			personality: int[];
-			tags: int[];
+			bananas: number;
+			personality: number[];
+			tags: number[];
 			accessToken: string;
 			refreshToken: string;
 		};

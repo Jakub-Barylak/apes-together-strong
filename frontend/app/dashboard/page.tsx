@@ -1,15 +1,138 @@
 "use client";
 import Card from "@/components/card";
 import EventTile from "@/components/EventTile";
-import { InfoPanel, type InfoPanelHandle } from "@/components/InfoPanel";
+import { InfoPanel } from "@/components/InfoPanel";
 import MapClient from "@/components/mapClient";
 import ProfileView from "@/components/ProfileView";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { InfoPanelHandle, LatLng, AtsEvent, MapBounds } from "@/types/types";
+import { useSession } from "next-auth/react";
+
+const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
 
 export default function DashboardPage() {
   const infoRef = useRef<InfoPanelHandle | null>(null);
+  const addRef = useRef<InfoPanelHandle | null>(null);
+
+  const boundsDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [events, setEvents] = useState<AtsEvent[]>([]);
+  const [draftPosition, setDraftPosition] = useState<LatLng | null>(null);
+
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  const [eventsError, setEventsError] = useState<string | null>(null);
+
+  const { data: session, status } = useSession();
+
+  const handleMapBoundsChange = (bounds: any) => {
+    if (boundsDebounceRef.current) {
+      clearTimeout(boundsDebounceRef.current);
+    }
+
+    boundsDebounceRef.current = setTimeout(() => {
+      const newBounds = {
+        n: bounds.getNorth(),
+        s: bounds.getSouth(),
+        e: bounds.getEast(),
+        w: bounds.getWest(),
+      };
+
+      setMapBounds((prev) => {
+        if (!prev) {
+          return newBounds;
+        }
+
+        const same =
+          prev.n === newBounds.n &&
+          prev.s === newBounds.s &&
+          prev.e === newBounds.e &&
+          prev.w === newBounds.w;
+
+        if (same) {
+          return prev;
+        }
+
+        return newBounds;
+      });
+    }, 300);
+  };
+
+  useEffect(() => {
+    if (!mapBounds) return;
+    if (!API_HOST) {
+      return;
+    }
+
+    const fetchEvents = async () => {
+      setEventsError(null);
+
+      try {
+        const { n, s, e, w } = mapBounds;
+        const url = `${API_HOST}/events?n=${n}&s=${s}&e=${e}&w=${w}`;
+        console.log("Fetching events from:", url);
+
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: any[] = await response.json();
+
+        console.log(data);
+
+        const mapped: AtsEvent[] = data.map((item: any) => ({
+          id: item.id,
+          position: [item.latitude, item.longitude],
+          organizer: item.organizer,
+          title: item.title,
+          description: item.description,
+          tags: item.tags,
+          location_name: item.location_name,
+          date: item.date,
+          personality: item.personality,
+        }));
+
+        setEvents(mapped);
+        setHasLoadedOnce(true);
+      } catch (error: any) {
+        console.error("Error fetching events:", error);
+        setEventsError(error.message);
+      }
+    };
+
+    fetchEvents();
+  }, [mapBounds]);
+
+  const handleConfirmAdd = () => {
+    if (!draftPosition) return;
+
+    const newEvent: AtsEvent = {
+      id: -1,
+      date: Date.now().toString(),
+      position: draftPosition,
+      organizer: 1,
+      title: "New Event",
+      description: "Description",
+      tags: [],
+      location_name: "Unknown",
+      personality: [],
+    };
+    setEvents((prevEvents) => [...prevEvents, newEvent]);
+    setDraftPosition(null);
+    addRef.current?.close();
+  };
+
   return (
-    <div className="grid grid-cols-[2fr_3fr] max-h-screen">
+    <div className="grid grid-cols-2 h-screen">
       <main className="shadow-2xl rounded-xl z-50 bg-white h-screen overflow-y-auto ">
         <header className="flex justify-between items-center w-full sticky top-0 z-1000 bg-white shadow-md px-6 py-4 mb-4">
           <img
@@ -87,19 +210,32 @@ export default function DashboardPage() {
       <div className="relative">
         <div className="w-[calc(100%+0.5rem)] h-full overflow-hidden backdrop-blur-xl border -ml-2">
           <MapClient
-            events={[]}
+            events={events}
+            draftPosition={draftPosition}
             onClickCallback={(latlng) => {
               console.log(latlng);
-              infoRef.current?.open();
+              setDraftPosition(latlng);
+              addRef.current?.open();
             }}
             onMarkerCallback={(marker) => {
               console.log(marker);
+              infoRef.current?.open();
             }}
-            onPanCallback={(bounds) => console.log(bounds)}
+            onPanCallback={handleMapBoundsChange}
           />
         </div>
         <InfoPanel ref={infoRef} headerComponent={<>Header</>}>
           INFO PANEL CONTENT
+        </InfoPanel>
+        <InfoPanel
+          ref={addRef}
+          headerComponent={<>Add Event</>}
+          onClose={() => {
+            setDraftPosition(null);
+          }}
+        >
+          ADD EVENT CONTENT
+          <button onClick={handleConfirmAdd}>Confirm Add</button>
         </InfoPanel>
       </div>
     </div>

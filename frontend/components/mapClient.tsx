@@ -2,38 +2,20 @@
 
 import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
-import { greenIcon } from "@/assets/mapMarkers";
-
-type ReactLeafletModule = typeof import("react-leaflet");
-type LeafletModule = typeof import("leaflet");
-
-type MapLibs = {
-  L: LeafletModule;
-  MapContainer: ReactLeafletModule["MapContainer"];
-  TileLayer: ReactLeafletModule["TileLayer"];
-  Marker: ReactLeafletModule["Marker"];
-  Popup: ReactLeafletModule["Popup"];
-  useMap: ReactLeafletModule["useMap"];
-  Circle: ReactLeafletModule["Circle"];
-  CircleMarker: ReactLeafletModule["CircleMarker"];
-};
-
-type LatLng = [number, number];
-
-type AtsEvent = {
-  id: number;
-  position: LatLng;
-};
+import { greenIcon, blueIcon, redIcon } from "@/assets/mapMarkers";
+import { AtsEvent, LatLng, MapLibs } from "@/types/types";
 
 const DEFAULT_CENTER: LatLng = [50.288636634077264, 18.677458290326385]; // AEI
 
 export default function MapClient({
   events,
+  draftPosition,
   onClickCallback,
   onPanCallback,
   onMarkerCallback,
 }: {
   events: AtsEvent[];
+  draftPosition: LatLng | null;
   onClickCallback: (latlng: LatLng) => void;
   onPanCallback: (bounds: any) => void;
   onMarkerCallback: (event: AtsEvent) => void;
@@ -41,6 +23,7 @@ export default function MapClient({
   const [libs, setLibs] = useState<MapLibs | null>(null);
   const [userPos, setUserPos] = useState<LatLng | null>(null);
   const [userAccuracy, setUserAccuracy] = useState<number | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -125,25 +108,34 @@ export default function MapClient({
     Circle,
     CircleMarker,
   } = libs;
-  const center = userPos || DEFAULT_CENTER;
+  const initialCenter = DEFAULT_CENTER;
 
   function RecenterOnUser({ position }: { position: LatLng }) {
     const map = useMap();
+    const [hasCentered, setHasCentered] = useState(false);
 
     useEffect(() => {
+      if (!position || hasCentered) return;
       map.setView(position, 13);
-    }, [map, position]);
+    }, [map, position, hasCentered]);
 
     return null;
   }
 
-  function MapClickHandler({
-    onClick,
-    onMarkerClick,
-  }: {
-    onClick: (latlng: LatLng) => void;
-    onMarkerClick: (marker: any) => void;
-  }) {
+  function OneTimeCenterOnUser() {
+    const map = useMap();
+
+    useEffect(() => {
+      if (userPos && !initialized) {
+        map.setView(userPos, 13);
+        setInitialized(true);
+      }
+    }, [map, userPos, initialized]);
+
+    return null;
+  }
+
+  function MapClickHandler({ onClick }: { onClick: (latlng: LatLng) => void }) {
     const map = useMap();
     let start: { x: number; y: number } | null = null;
 
@@ -215,15 +207,29 @@ export default function MapClient({
   return (
     <div className="h-full w-full">
       <MapContainer
-        center={center} // podmień na swoje coords
+        center={initialCenter} // podmień na swoje coords
         zoom={13}
         scrollWheelZoom
         className="h-full w-full"
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {events.map((event) => (
-          <Marker key={event.id} position={event.position} icon={greenIcon} />
+          <Marker
+            key={event.id}
+            position={event.position}
+            icon={blueIcon}
+            eventHandlers={{
+              click() {
+                onMarkerCallback(event);
+              },
+            }}
+          />
         ))}
+        {draftPosition && (
+          <>
+            <Marker position={draftPosition} icon={redIcon} />
+          </>
+        )}
         <Marker
           key={-1}
           position={DEFAULT_CENTER}
@@ -236,10 +242,7 @@ export default function MapClient({
         >
           <Popup>Here be Apes 🐒</Popup>
         </Marker>
-        <MapClickHandler
-          onClick={onClickCallback}
-          onMarkerClick={onMarkerCallback}
-        />
+        <MapClickHandler onClick={onClickCallback} />
         <MapBoundsListener onChange={onPanCallback} />
         {userPos && (
           <>
@@ -263,7 +266,7 @@ export default function MapClient({
                 weight: 1,
               }}
             />
-            <RecenterOnUser position={userPos} />
+            <OneTimeCenterOnUser />
           </>
         )}
       </MapContainer>
