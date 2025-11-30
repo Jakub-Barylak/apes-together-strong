@@ -9,6 +9,7 @@ from events.middlewares import get_distance
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+from events.serializers.my_events_serializer import EventOverviewSerializer 
 
 
 
@@ -38,6 +39,7 @@ class EventViewSet(viewsets.ModelViewSet):
                         - Use only codes, do not add descriptions or explanations.
                         - Separate multiple personality types with commas, no extra text.
                         - Remove duplicates and ignore case differences.
+                        - You have to choose at least one personality type.
                 """},
                 {"role": "user", "content": f"""Event description: "{description}" Select the personality types that best match this event."""}
             ],
@@ -119,4 +121,16 @@ class EventViewSet(viewsets.ModelViewSet):
 
         event.participants.remove(user)
         return Response({"detail": "Left"}, status=200)
+    
+    @action(detail=False, methods=['get'], url_path='me')
+    def me(self, request):
+        user = request.user
+
+        data = {
+            "participating": user.events.all(),
+            "organizing": user.organized_events.all(),
+        }
+
+        serializer = EventOverviewSerializer(data)
+        return Response(serializer.data)
 

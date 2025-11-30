@@ -13,6 +13,7 @@ class Event(models.Model):
     tags = models.ManyToManyField(Tag, blank=True)
     organizer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="organized_events")
     personality = models.ManyToManyField(Personality, blank=True)
+    is_sponsored = models.BooleanField(default=False)
 
 
     def __str__(self):
