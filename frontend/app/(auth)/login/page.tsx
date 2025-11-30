@@ -38,7 +38,7 @@ export default function LoginPage() {
 		router.push(callbackUrl);
 	};
 
-	return <div className="relative h-screen w-screen flex flex-col items-center justify-start bg-amber-200 overflow-hidden pt-16">
+	return <div className="relative h-screen w-screen flex flex-col items-center justify-start dark:bg-slate-950 bg-amber-200 overflow-hidden pt-16">
 		<ApeBackground />
 
 		<div className="flex flex-col items-center gap-2 mb-2">
@@ -52,7 +52,7 @@ export default function LoginPage() {
 		</div>
 		<form
 			onSubmit={handleSubmit}
-			className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white w-80"
+			className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md dark:bg-slate-900 bg-white w-80"
 		>
 			<div className="grid grid-cols-[auto,1fr] items-center gap-2">
 				<label htmlFor="username">Username</label>

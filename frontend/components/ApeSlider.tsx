@@ -12,10 +12,10 @@ export const ApeBackground = () => {
 					<div className="ape-marquee-inner"
 						style={{ animationDuration: "300s" }}
 					>
-						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/20">
+						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/20 dark:text-amber-100/10">
 							{line}
 						</span>
-						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/20">
+						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/20 dark:text-amber-100/10">
 							{line}
 						</span>
 					</div>
@@ -27,10 +27,10 @@ export const ApeBackground = () => {
 						className="ape-marquee-inner"
 						style={{ animationDuration: "400s" }}
 					>
-						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15">
+						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15 dark:text-amber-100/5">
 							{line}
 						</span>
-						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15">
+						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15 dark:text-amber-100/5">
 							{line}
 						</span>
 					</div>
@@ -42,10 +42,10 @@ export const ApeBackground = () => {
 						className="ape-marquee-inner"
 						style={{ animationDuration: "500s" }}
 					>
-						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15">
+						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15 dark:text-amber-100/5">
 							{line}
 						</span>
-						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15">
+						<span className="text-5xl font-extrabold tracking-[0.4em] uppercase text-amber-900/15 dark:text-amber-100/5">
 							{line}
 						</span>
 					</div>

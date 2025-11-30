@@ -4,6 +4,7 @@ import { ApeBackground } from "@/components/ApeSlider";
 import { BananaButton } from "@/components/BananaButton";
 import { METHODS } from "http";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -100,8 +101,18 @@ export default function UpdateProfilePag() {
 		return;
 	}
 
-	return <div className="relative h-screen w-screen flex items-center justify-center bg-amber-200 overflow-hidden">
+	return <div className="relative h-screen w-screen flex flex-col items-center justify-center bg-amber-200 overflow-hidden dark:bg-slate-950">
 		<ApeBackground />
+
+		<div className="flex flex-col items-center gap-2 mb-2">
+			<div className="relative w-64 h-64">
+				<Image
+					src="/monke_smth_about_u.png"
+					alt="Ape Together Strong"
+					fill
+				/>
+			</div>
+		</div>
 		<form
 			onSubmit={handleSubmit}
 			className="relative z-10 grid gap-4 p-6 rounded-lg shadow-md bg-white w-80"

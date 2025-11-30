@@ -72,7 +72,7 @@ export default function RegisterPage() {
 	};
 
 	return (
-		<div className="relative h-screen w-screen flex flex-col items-center justify-start bg-amber-200 overflow-hidden pt-12">
+		<div className="relative h-screen w-screen flex flex-col items-center justify-start bg-amber-200 overflow-hidden pt-12  dark:bg-slate-950">
 			<ApeBackground />
 			<div className="flex flex-col items-center gap-2 mb-2">
 				<div className="relative w-60 h-60">
