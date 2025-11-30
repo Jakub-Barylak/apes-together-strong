@@ -13,10 +13,12 @@ import {
 	DraftEvent,
 	eventType,
 	userType,
+	Tag,
 } from "@/types/types";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import { BananaButton } from "@/components/BananaButton";
+import EventDetails from "@/components/EventDetails";
 
 const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
 
@@ -47,10 +49,6 @@ export default function DashboardPage() {
 	const [date, setDate] = useState<Date | null>(null);
 	const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
-	type Tag = {
-		id: number;
-		name: string;
-	};
 	const [tags, setTags] = useState<Tag[]>([]);
 
 	const handleMapBoundsChange = (bounds: any) => {
@@ -392,6 +390,7 @@ export default function DashboardPage() {
 							addRef.current?.open();
 						}}
 						onMarkerCallback={(marker) => {
+							if (marker.id < 0) return;
 							setCurrentEvent(marker);
 							infoRef.current?.open();
 						}}
@@ -400,12 +399,18 @@ export default function DashboardPage() {
 				</div>
 				<InfoPanel
 					ref={infoRef}
-					headerComponent={<>Header</>}
+					headerComponent={
+						<h1 className="font-extrabold">
+							{currentEvent?.title}
+						</h1>
+					}
 					onClose={() => setCurrentEvent(null)}
 				>
 					<div>
-						{/* TODO: wyświetlanie evenut */}
-						{JSON.stringify(currentEvent)}
+						<EventDetails
+							event={currentEvent}
+							tags={tags}
+						/>
 					</div>
 				</InfoPanel>
 				<InfoPanel
@@ -422,7 +427,7 @@ export default function DashboardPage() {
 				>
 					{/* TODO: add tags */}
 					<form
-						className="bg-white/90 border border-gray-200 rounded-xl shadow-lg p-6 flex flex-col"
+						className="h-full flex flex-col gap-4"
 						onSubmit={handleConfirmAdd}
 					>
 						{/* Tytuł */}
