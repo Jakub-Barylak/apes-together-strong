@@ -39,15 +39,18 @@ const MapClient = forwardRef<
 		const [userPos, setUserPos] = useState<LatLng | null>(null);
 		const [userAccuracy, setUserAccuracy] = useState<number | null>(null);
 		const [initialized, setInitialized] = useState(false);
-		const mapRef = useRef<any | null>(null);
-		const pendingCenterRef = useRef<{
-			position: LatLng;
-			zoom?: number;
-		} | null>(null);
-		const pendingFlyRef = useRef<{
-			position: LatLng;
-			zoom?: number;
-		} | null>(null);
+			const mapRef = useRef<any | null>(null);
+			const pendingCenterRef = useRef<{
+				position: LatLng;
+				zoom?: number;
+				requestId?: number;
+			} | null>(null);
+			const pendingFlyRef = useRef<{
+				position: LatLng;
+				zoom?: number;
+				requestId?: number;
+			} | null>(null);
+			const lastCenterIdRef = useRef<number | null>(null);
 
 		useEffect(() => {
 			let isMounted = true;
@@ -147,31 +150,42 @@ const MapClient = forwardRef<
 			[]
 		);
 
-		useEffect(() => {
-			if (!centerTarget) return;
-			if (pendingFlyRef.current) {
-				// prefer applying fly if previously requested
-				const { position, zoom } = pendingFlyRef.current;
-				if (mapRef.current) {
-					mapRef.current.flyTo(
-						position,
-						zoom ?? mapRef.current.getZoom?.() ?? 13
-					);
-					pendingFlyRef.current = null;
+			useEffect(() => {
+				if (!centerTarget) return;
+				const targetId = centerTarget.requestId ?? Date.now();
+				if (lastCenterIdRef.current === targetId) return;
+
+				console.log("centerTarget received", centerTarget, "map ready?", !!mapRef.current);
+				if (pendingFlyRef.current) {
+					// prefer applying fly if previously requested
+					const { position, zoom, requestId } = pendingFlyRef.current;
+					if (mapRef.current) {
+						mapRef.current.flyTo(
+							position,
+							zoom ?? mapRef.current.getZoom?.() ?? 13
+						);
+						lastCenterIdRef.current = requestId ?? targetId;
+						console.log("Applied fly from pending via centerTarget");
+						pendingFlyRef.current = null;
+						return;
+					}
 				}
-			}
-			if (mapRef.current) {
-				mapRef.current.setView(
-					centerTarget.position,
-					centerTarget.zoom ?? mapRef.current.getZoom?.() ?? 13
-				);
-				return;
-			}
-			pendingCenterRef.current = {
-				position: centerTarget.position,
-				zoom: centerTarget.zoom,
-			};
-		}, [centerTarget]);
+				if (mapRef.current) {
+					mapRef.current.setView(
+						centerTarget.position,
+						centerTarget.zoom ?? mapRef.current.getZoom?.() ?? 13
+					);
+					lastCenterIdRef.current = targetId;
+					console.log("Applied centerTarget immediately");
+					return;
+				}
+				pendingCenterRef.current = {
+					position: centerTarget.position,
+					zoom: centerTarget.zoom,
+					requestId: targetId,
+				};
+				console.log("Queued centerTarget (map not ready)", centerTarget);
+			}, [centerTarget]);
 
 		// jeszcze się ładuje react-leaflet / leaflet
 		if (!libs) {
@@ -193,32 +207,7 @@ const MapClient = forwardRef<
 		} = libs;
 		const initialCenter = DEFAULT_CENTER;
 
-		function CenterController({
-			target,
-		}: {
-			target?: { position: LatLng; zoom?: number; requestId?: number };
-		}) {
-			const map = useMap();
-
-			useEffect(() => {
-				if (!target) return;
-				map.setView(
-					target.position,
-					target.zoom ?? map.getZoom?.() ?? 13
-				);
-				console.log("CenterController applied target", target);
-			}, [
-				map,
-				target?.requestId,
-				target?.zoom,
-				target?.position?.[0],
-				target?.position?.[1],
-			]);
-
-			return null;
-		}
-
-		function RecenterOnUser({ position }: { position: LatLng }) {
+			function RecenterOnUser({ position }: { position: LatLng }) {
 			const map = useMap();
 			const [hasCentered, setHasCentered] = useState(false);
 
@@ -335,32 +324,37 @@ const MapClient = forwardRef<
 						mapRef.current = mapInstance;
 						console.log("Map created", mapInstance);
 						if (pendingCenterRef.current) {
-							const { position, zoom } = pendingCenterRef.current;
+							const { position, zoom, requestId } = pendingCenterRef.current;
 							const targetZoom =
 								zoom !== undefined
 									? zoom
-									: (mapInstance.getZoom?.() ?? 13);
+									: mapInstance.getZoom?.() ?? 13;
 							mapInstance.setView(position, targetZoom);
 							console.log(
 								"Applied pending center",
 								position,
 								targetZoom
 							);
+							if (requestId !== undefined) {
+								lastCenterIdRef.current = requestId;
+							}
 							pendingCenterRef.current = null;
 						}
 						if (pendingFlyRef.current) {
-							const { position, zoom } = pendingFlyRef.current;
+							const { position, zoom, requestId } = pendingFlyRef.current;
 							mapInstance.flyTo(
 								position,
 								zoom ?? mapInstance.getZoom?.() ?? 13
 							);
 							console.log("Applied pending fly", position, zoom);
+							if (requestId !== undefined) {
+								lastCenterIdRef.current = requestId;
+							}
 							pendingFlyRef.current = null;
 						}
 					}}
 					className="h-full w-full"
 				>
-					<CenterController target={centerTarget} />
 					<TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 					{events.map((event) => (
 						<Marker

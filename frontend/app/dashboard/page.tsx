@@ -392,17 +392,20 @@ export default function DashboardPage() {
 
 	useEffect(() => {
 		const fetchReccomended = async () => {
-			const res = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/events/reccommendations/`, {
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session?.accessToken}`,
-				},
-			});
+			const res = await fetch(
+				`${process.env.NEXT_PUBLIC_API_HOST}/events/reccommendations/`,
+				{
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${session?.accessToken}`,
+					},
+				}
+			);
 			const recommendedEvents_res = await res.json();
 			console.log(recommendedEvents_res);
-			setRecommendedEvents(recommendedEvents_res)
-		}
+			setRecommendedEvents(recommendedEvents_res);
+		};
 
 		if (status === "loading") {
 			return;
@@ -410,6 +413,27 @@ export default function DashboardPage() {
 
 		fetchReccomended();
 	}, [status]);
+
+	const onDetailsClick = (event: any) => {
+		const coords =
+			//@ts-ignore
+			getLatLngFromEvent(event);
+		if (coords) {
+			console.log("Centering on", coords, event);
+			if (!mapRef.current) {
+				console.warn("Map ref not ready");
+			}
+			setCenterRequest({
+				position: coords,
+				zoom: 15,
+				requestId: Date.now(),
+			});
+		} else {
+			console.warn("Missing coords for event", event);
+		}
+		setCurrentEvent(toAtsEvent(event));
+		infoRef.current?.open();
+	};
 
 	if (!session) {
 		return <div>Loading...</div>;
@@ -433,17 +457,17 @@ export default function DashboardPage() {
 						</h2>
 						<div className="overflow-x-scroll -mx-4">
 							<div className="flex gap-4 py-2 h-50 w-fit px-4">
-								{
-									recommendedEvents.map((event, index) => {
-										return <Card
+								{recommendedEvents.map((event, index) => {
+									return (
+										<Card
 											key={index}
 											title={event.title}
 											author={event.title}
 											imageUrl="https://images.pexels.com/photos/33129/popcorn-movie-party-entertainment.jpg"
 											sponsored={index === 0}
 										/>
-									})
-								}
+									);
+								})}
 							</div>
 						</div>
 					</div>
@@ -456,35 +480,7 @@ export default function DashboardPage() {
 								<EventTile
 									key={index}
 									event={event}
-									onDetailsClick={() => {
-										const coords =
-											//@ts-ignore
-											getLatLngFromEvent(event);
-										if (coords) {
-											console.log(
-												"Centering on",
-												coords,
-												event
-											);
-											if (!mapRef.current) {
-												console.warn(
-													"Map ref not ready"
-												);
-											}
-											setCenterRequest({
-												position: coords,
-												zoom: 15,
-												requestId: Date.now(),
-											});
-										} else {
-											console.warn(
-												"Missing coords for event",
-												event
-											);
-										}
-										setCurrentEvent(toAtsEvent(event));
-										infoRef.current?.open();
-									}}
+									onDetailsClick={() => onDetailsClick(event)}
 									onStarClick={() => updateSelection(event)}
 								/>
 							))}
@@ -513,16 +509,21 @@ export default function DashboardPage() {
 								title: event.title,
 								organizer: event.organizer,
 								personality: [], // TODO map
-								starred: false
-							}
-							return <EventTile key={index}
-								event={newEvent}
-								onDetailsClick={() => console.log("Detailed clicked")}
-								onStarClick={() => updateSelection(newEvent)}
-							/>
-						})
-						}
-
+								starred: false,
+							};
+							return (
+								<EventTile
+									key={index}
+									event={newEvent}
+									onDetailsClick={() =>
+										onDetailsClick(newEvent)
+									}
+									onStarClick={() =>
+										updateSelection(newEvent)
+									}
+								/>
+							);
+						})}
 					</div>
 				</div>
 			</main>
@@ -691,10 +692,10 @@ export default function DashboardPage() {
 													setSelectedTagIds((prev) =>
 														prev.includes(tag.id)
 															? prev.filter(
-																(id) =>
-																	id !==
-																	tag.id
-															)
+																	(id) =>
+																		id !==
+																		tag.id
+																)
 															: [...prev, tag.id]
 													);
 												}}
