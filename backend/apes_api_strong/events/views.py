@@ -9,6 +9,7 @@ from events.middlewares import get_distance
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+from events.serializers.my_events_serializer import EventOverviewSerializer 
 
 
 
@@ -123,7 +124,13 @@ class EventViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='me')
     def me(self, request):
-        events = request.user.events.all()   # M2M z usera
-        serializer = EventSerializer(events, many=True)
+        user = request.user
+
+        data = {
+            "participating": user.events.all(),
+            "organizing": user.organized_events.all(),
+        }
+
+        serializer = EventOverviewSerializer(data)
         return Response(serializer.data)
 
