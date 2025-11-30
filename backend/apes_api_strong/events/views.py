@@ -38,6 +38,7 @@ class EventViewSet(viewsets.ModelViewSet):
                         - Use only codes, do not add descriptions or explanations.
                         - Separate multiple personality types with commas, no extra text.
                         - Remove duplicates and ignore case differences.
+                        - You have to choose at least one personality type.
                 """},
                 {"role": "user", "content": f"""Event description: "{description}" Select the personality types that best match this event."""}
             ],
@@ -119,4 +120,10 @@ class EventViewSet(viewsets.ModelViewSet):
 
         event.participants.remove(user)
         return Response({"detail": "Left"}, status=200)
+    
+    @action(detail=False, methods=['get'], url_path='me')
+    def me(self, request):
+        events = request.user.events.all()   # M2M z usera
+        serializer = EventSerializer(events, many=True)
+        return Response(serializer.data)
 
