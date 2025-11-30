@@ -321,6 +321,10 @@ export default function DashboardPage() {
 		addRef.current?.close();
 	};
 
+	if (!session) {
+		return <div>Loading...</div>;
+	}
+
 	return (
 		<div className="grid grid-cols-[2fr_3fr] h-screen">
 			<main className="shadow-2xl rounded-xl z-50 bg-white h-screen overflow-y-auto ">
