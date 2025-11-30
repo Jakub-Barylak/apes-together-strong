@@ -1,8 +1,8 @@
 export type userType = {
-  id: number;
-  username: string;
-  email: string;
   bananas: number;
+  email: string;
+  id: number;
+  name: string;
   personality: number[];
   tags: number[];
 };
@@ -15,9 +15,11 @@ export type eventType = {
   latitude: number;
   longitude: number;
   location_name: string;
-  host: string;
+  host?: string;
+  organizer?: number;
   tags: number[];
   personality: number[];
+  starred?: boolean;
 };
 
 export type InfoPanelHandle = {

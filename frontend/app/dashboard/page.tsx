@@ -11,6 +11,7 @@ import {
   AtsEvent,
   MapBounds,
   eventType,
+  userType,
 } from "@/types/types";
 import { useSession } from "next-auth/react";
 
@@ -121,12 +122,110 @@ export default function DashboardPage() {
     fetchEvents();
   }, [mapBounds]);
 
+  const updateSelection = async (event: eventType) => {
+    if (!session) return;
+    if (!API_HOST) {
+      console.error("NEXT_PUBLIC_API_HOST is not set");
+      return;
+    }
+    let url;
+    if (event.starred) {
+      url = `${API_HOST}/events/${event.id}/leave/`;
+    } else {
+      url = `${API_HOST}/events/${event.id}/join/`;
+    }
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error updating event selection:", error);
+    } finally {
+      fetchMyEvents();
+    }
+  };
+
+  const fetchMyEvents = async () => {
+    if (!session) return;
+    try {
+      const response = await fetch(`${API_HOST}/events/me`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: { participating?: any[]; organizing?: any[] } =
+        await response.json();
+      console.log("User's events:", data);
+
+      const organizing = data.organizing ?? [];
+      const participating = data.participating ?? [];
+
+      const mergedById = new Map<number, any>();
+
+      organizing.forEach((evt) => {
+        mergedById.set(evt.id, { ...evt, starred: false });
+      });
+
+      participating.forEach((evt) => {
+        const existing = mergedById.get(evt.id);
+        mergedById.set(evt.id, {
+          ...(existing ?? evt),
+          ...evt,
+          starred: true, // starred when also participating
+        });
+      });
+
+      const mergedEvents: eventType[] = Array.from(mergedById.values()).map(
+        (evt) => ({
+          id: evt.id,
+          title: evt.title,
+          description: evt.description,
+          date: evt.date,
+          latitude: evt.latitude,
+          longitude: evt.longitude,
+          location_name: evt.location_name,
+          host:
+            evt.host ??
+            (evt.organizer !== undefined ? String(evt.organizer) : undefined),
+          organizer: evt.organizer,
+          tags: evt.tags ?? [],
+          personality: evt.personality ?? [],
+          starred: evt.starred ?? false,
+        }),
+      );
+
+      setMyEvents(mergedEvents);
+      setHasLoadedMyEvents(true);
+    } catch (error) {
+      console.error("Error fetching user's events:", error);
+    }
+  };
+
   useEffect(() => {
     if (hasLoadedMyEvents) return;
-
-    // Fetch user's events here and set them to state
-    // TODO!!!
-  }, [hasLoadedMyEvents]);
+    if (status !== "authenticated") return;
+    if (!API_HOST) {
+      console.error("NEXT_PUBLIC_API_HOST is not set");
+      return;
+    }
+    if (!session?.accessToken) {
+      console.error("No access token available, cannot fetch user events");
+      return;
+    }
+    fetchMyEvents();
+  }, [API_HOST, hasLoadedMyEvents, session, status]);
 
   const handleConfirmAdd = () => {
     if (!draftPosition) return;
@@ -156,16 +255,7 @@ export default function DashboardPage() {
             alt="Apes Together Strong Logo"
             className="h-12 w-auto"
           />
-          <ProfileView
-            user={{
-              id: 1,
-              username: "apeUser",
-              email: "apeUser@example.com",
-              bananas: 100,
-              personality: [1, 2, 3],
-              tags: [1, 2],
-            }}
-          />
+          <ProfileView user={session?.user as unknown as userType} />
         </header>
         <div className="flex flex-col gap-2 p-4">
           <div>
@@ -192,24 +282,14 @@ export default function DashboardPage() {
               Your events
             </h2>
             <div className="flex flex-col gap-2">
-              {[...Array(3)].map((_, index) => (
+              {myEvents.map((event, index) => (
                 <EventTile
                   key={index}
-                  event={{
-                    id: 1,
-                    title: "Sample Event",
-                    description: "This is a sample event.",
-                    date: "2024-06-01",
-                    latitude: 40.7128,
-                    longitude: -74.006,
-                    location_name: "New York",
-                    host: "apeUser",
-                    tags: [1, 2],
-                    personality: [1, 2],
-                  }}
+                  event={event}
                   onDetailsClick={() => {
                     console.log("Details clicked");
                   }}
+                  onStarClick={() => updateSelection(event)}
                 />
               ))}
             </div>

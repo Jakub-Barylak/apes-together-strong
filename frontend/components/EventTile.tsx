@@ -5,9 +5,11 @@ import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 export default function EventTile({
   event,
   onDetailsClick,
+  onStarClick,
 }: {
   event: eventType;
   onDetailsClick?: () => void;
+  onStarClick?: (event: eventType) => void;
 }) {
   return (
     <div className="w-full grid grid-cols-[auto_1fr_auto] gap-4 justify-center items-center ">
@@ -19,10 +21,29 @@ export default function EventTile({
       <div className="flex flex-col justify-center">
         <span className="inline-flex items-center">
           <h3 className="text-lg font-bold">{event.title}</h3>
-          <StarIcon className="h-6 w-6 text-ats-yellow-500 inline-block ml-2" />
-          <StarIconSolid className="h-6 w-6 text-ats-yellow-500 inline-block ml-2" />
+          {event.starred ? (
+            <StarIconSolid
+              className="h-6 w-6 text-ats-yellow-500 inline-block ml-2 cursor-pointer"
+              onClick={() => onStarClick && onStarClick(event)}
+            />
+          ) : (
+            <StarIcon
+              className="h-6 w-6 text-ats-yellow-500 inline-block ml-2 cursor-pointer"
+              onClick={() => onStarClick && onStarClick(event)}
+            />
+          )}
         </span>
-        <p className="text-sm text-gray-600">Hosted by: {event.host}</p>
+        {event.host && (
+          <p className="text-sm text-gray-600">Hosted by: {event.host}</p>
+        )}
+        <p className="text-sm text-gray-600">
+          {new Date(event.date).toLocaleDateString()}
+          {": "}
+          {new Date(event.date).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
       </div>
       <button
         onClick={onDetailsClick}
