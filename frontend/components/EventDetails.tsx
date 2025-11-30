@@ -5,9 +5,11 @@ import { PERSONALITY_TYPES } from "@/assets/personalityTypes";
 export default function EventDetails({
 	event,
 	tags,
+	onJoin,
 }: {
 	event: AtsEvent | null | undefined;
 	tags: Tag[];
+	onJoin: () => void;
 }) {
 	if (!event) {
 		return <div>No Event Selected</div>;
@@ -17,9 +19,9 @@ export default function EventDetails({
 		.filter((tag) => event.tags.includes(tag.id))
 		.map((tag) => tag.name);
 
+	const personalityIds = (event.personality ?? []).map((p) => Number(p));
 	const personalityLabels = PERSONALITY_TYPES.filter((type) =>
-		// @ts-ignore
-		event.personality.includes(type.id)
+		personalityIds.includes(type.id)
 	).map((type) => type.label);
 
 	return (
@@ -66,6 +68,12 @@ export default function EventDetails({
 					))}
 				</div>
 			)}
+			<button
+				onClick={onJoin}
+				className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+			>
+				Join Event
+			</button>
 		</div>
 	);
 }

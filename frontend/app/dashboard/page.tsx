@@ -11,6 +11,7 @@ import {
 	AtsEvent,
 	MapBounds,
 	DraftEvent,
+	MapClientHandle,
 	eventType,
 	userType,
 	Tag,
@@ -25,6 +26,7 @@ const API_HOST = process.env.NEXT_PUBLIC_API_HOST;
 export default function DashboardPage() {
 	const infoRef = useRef<InfoPanelHandle | null>(null);
 	const addRef = useRef<InfoPanelHandle | null>(null);
+	const mapRef = useRef<MapClientHandle | null>(null);
 
 	const boundsDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -49,7 +51,53 @@ export default function DashboardPage() {
 	const [date, setDate] = useState<Date | null>(null);
 	const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
+	const [recommendedEvents, setRecommendedEvents] = useState<any[]>([]);
+	const [nearbyEvents, setNearbyEvents] = useState<any[]>([]);
+	const [userPos, setUserPos] = useState<LatLng | null>(null);
+
 	const [tags, setTags] = useState<Tag[]>([]);
+	const [centerRequest, setCenterRequest] = useState<{
+		position: LatLng;
+		zoom?: number;
+		requestId: number;
+	} | null>(null);
+
+	const getLatLngFromEvent = (
+		event: Partial<AtsEvent> & Partial<eventType>
+	): LatLng | null => {
+		if (event.position && Array.isArray(event.position)) {
+			return event.position as LatLng;
+		}
+		if (
+			event.latitude !== undefined &&
+			event.longitude !== undefined &&
+			event.latitude !== null &&
+			event.longitude !== null
+		) {
+			const lat = Number(event.latitude);
+			const lng = Number(event.longitude);
+			if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+				return [lat, lng];
+			}
+		}
+		return null;
+	};
+
+	const toAtsEvent = (event: eventType): AtsEvent => {
+		// @ts-ignore
+		const coords = getLatLngFromEvent(event) ?? [0, 0];
+		return {
+			id: event.id,
+			title: event.title,
+			description: event.description,
+			date: event.date,
+			position: coords,
+			organizer: event.organizer ?? Number(event.host) ?? 0,
+			tags: event.tags ?? [],
+			location_name: event.location_name,
+			personality: (event.personality ?? []).map((p) => p.toString()),
+		};
+	};
 
 	const handleMapBoundsChange = (bounds: any) => {
 		if (boundsDebounceRef.current) {
@@ -82,6 +130,31 @@ export default function DashboardPage() {
 				return newBounds;
 			});
 		}, 300);
+	};
+
+	const joinEvent = async (eventId: number) => {
+		if (!session) return;
+		if (!API_HOST) {
+			console.error("NEXT_PUBLIC_API_HOST is not set");
+			return;
+		}
+		const url = `${API_HOST}/events/${eventId}/join/`;
+		try {
+			const response = await fetch(url, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session.accessToken}`,
+				},
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+		} catch (error) {
+			console.error("Error joining event:", error);
+		} finally {
+			fetchMyEvents();
+		}
 	};
 
 	const fetchEvents = async () => {
@@ -135,6 +208,56 @@ export default function DashboardPage() {
 		}
 		fetchEvents();
 	}, [mapBounds]);
+
+	useEffect(() => {
+		if (!navigator.geolocation) {
+			console.log("Geolocation is not supported by your browser");
+			return;
+		}
+
+		navigator.geolocation.getCurrentPosition(
+			(pos) => {
+				console.log("User position:", pos);
+				const { latitude, longitude, accuracy } = pos.coords;
+				setUserPos([latitude, longitude]);
+			},
+			(err) => {
+				console.warn("Unable to retrieve your location", err);
+			},
+			{ enableHighAccuracy: true, timeout: 10000 }
+		);
+	}, []);
+
+	useEffect(() => {
+		if (status !== "authenticated") return;
+		fetchNearbyEvents();
+	}, [userPos, session, status]);
+
+	const fetchNearbyEvents = async () => {
+		if (!session) return;
+		if (!API_HOST) {
+			console.error("NEXT_PUBLIC_API_HOST is not set");
+			return;
+		}
+		try {
+			const url = `${API_HOST}/events?lat=${userPos?.[0]}&lon=${userPos?.[1]}&distance=10`;
+			const response = await fetch(url, {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session.accessToken}`,
+				},
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			const data: any[] = await response.json();
+			console.log("Nearby events:", data);
+			setNearbyEvents(data);
+		} catch (error) {
+			console.error("Error fetching nearby events:", error);
+		}
+	};
 
 	const updateSelection = async (event: eventType) => {
 		if (!session) return;
@@ -319,6 +442,51 @@ export default function DashboardPage() {
 		addRef.current?.close();
 	};
 
+	useEffect(() => {
+		const fetchReccomended = async () => {
+			const res = await fetch(
+				`${process.env.NEXT_PUBLIC_API_HOST}/events/reccommendations/`,
+				{
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${session?.accessToken}`,
+					},
+				}
+			);
+			const recommendedEvents_res = await res.json();
+			console.log(recommendedEvents_res);
+			setRecommendedEvents(recommendedEvents_res);
+		};
+
+		if (status === "loading") {
+			return;
+		}
+
+		fetchReccomended();
+	}, [status]);
+
+	const onDetailsClick = (event: any) => {
+		const coords =
+			//@ts-ignore
+			getLatLngFromEvent(event);
+		if (coords) {
+			console.log("Centering on", coords, event);
+			if (!mapRef.current) {
+				console.warn("Map ref not ready");
+			}
+			setCenterRequest({
+				position: coords,
+				zoom: 15,
+				requestId: Date.now(),
+			});
+		} else {
+			console.warn("Missing coords for event", event);
+		}
+		setCurrentEvent(toAtsEvent(event));
+		infoRef.current?.open();
+	};
+
 	if (!session) {
 		return <div>Loading...</div>;
 	}
@@ -341,16 +509,17 @@ export default function DashboardPage() {
 						</h2>
 						<div className="overflow-x-scroll -mx-4">
 							<div className="flex gap-4 py-2 h-50 w-fit px-4">
-								{/* card-scroll */}
-								{[...Array(5)].map((_, index) => (
-									<Card
-										key={index}
-										title="Sample Title"
-										author="Name"
-										imageUrl="https://images.pexels.com/photos/33129/popcorn-movie-party-entertainment.jpg"
-										sponsored={index % 2 === 0}
-									/>
-								))}
+								{recommendedEvents.map((event, index) => {
+									return (
+										<Card
+											key={index}
+											title={event.title}
+											author={event.title}
+											imageUrl="https://images.pexels.com/photos/33129/popcorn-movie-party-entertainment.jpg"
+											sponsored={index === 0}
+										/>
+									);
+								})}
 							</div>
 						</div>
 					</div>
@@ -363,9 +532,7 @@ export default function DashboardPage() {
 								<EventTile
 									key={index}
 									event={event}
-									onDetailsClick={() => {
-										console.log("Details clicked");
-									}}
+									onDetailsClick={() => onDetailsClick(event)}
 									onStarClick={() => updateSelection(event)}
 								/>
 							))}
@@ -375,13 +542,49 @@ export default function DashboardPage() {
 						<h2 className="text-ats-green-500 font-extrabold text-2xl">
 							Events nearby
 						</h2>
-						EVENTS NEARBY LIST
+						{nearbyEvents.map((event, index) => {
+							// let isStarred = false;
+							// myEvents.forEach(myEvent => {
+							// 	if (event.id === myEvent.id && parseInt(session.user.id) !== myEvent.organizer) {
+							// 		isStarred = true;
+							// 	}
+							// });
+
+							const newEvent: eventType = {
+								date: event.date,
+								description: event.description,
+								id: event.id,
+								latitude: event.latitude,
+								longitude: event.longitude,
+								location_name: event.location_name,
+								tags: event.tags,
+								title: event.title,
+								organizer: event.organizer,
+								personality: [], // TODO map
+								starred: false,
+							};
+							return (
+								<EventTile
+									key={index}
+									event={newEvent}
+									onDetailsClick={() =>
+										onDetailsClick(newEvent)
+									}
+									onStarClick={() =>
+										updateSelection(newEvent)
+									}
+								/>
+							);
+						})}
 					</div>
 				</div>
 			</main>
 			<div className="relative">
 				<div className="w-[calc(100%+0.5rem)] h-full overflow-hidden backdrop-blur-xl border -ml-2">
 					<MapClient
+						ref={mapRef}
+						// @ts-ignore
+						centerTarget={centerRequest}
 						events={events}
 						draftPosition={draftPosition}
 						onClickCallback={(latlng) => {
@@ -410,6 +613,9 @@ export default function DashboardPage() {
 						<EventDetails
 							event={currentEvent}
 							tags={tags}
+							onJoin={() => {
+								joinEvent(currentEvent!.id);
+							}}
 						/>
 					</div>
 				</InfoPanel>
@@ -427,7 +633,7 @@ export default function DashboardPage() {
 				>
 					{/* TODO: add tags */}
 					<form
-						className="h-full flex flex-col gap-4"
+						className="flex flex-col gap-4 overflow-y-auto"
 						onSubmit={handleConfirmAdd}
 					>
 						{/* Tytuł */}
