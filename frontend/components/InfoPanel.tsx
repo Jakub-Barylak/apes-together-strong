@@ -18,15 +18,15 @@ export const InfoPanel = forwardRef<InfoPanelHandle, InfoPanelProps>(
 					onClose?.();
 				},
 			}),
-			[onClose],
+			[onClose]
 		);
 
 		if (!isVisible) return null;
 
 		return (
-			<div className="max-h-[70%] absolute left-4 bottom-4 w-[calc(100%-2rem)] bg-white rounded-2xl z-1000 p-4 shadow-2xl grid grid-rows-[auto_1fr] gap-4">
+			<div className="max-h-[80vh] min-h-[35%] absolute left-4 bottom-4 w-[calc(100%-2rem)] bg-white rounded-2xl z-1000 p-4 shadow-2xl flex flex-col gap-2 overflow-hidden">
 				<header>
-					<div>{headerComponent}</div>
+					<div className="text-2xl">{headerComponent}</div>
 					<XMarkIcon
 						className="w-10 h-10 absolute top-4 right-4 cursor-pointer"
 						onClick={() => {
@@ -35,8 +35,8 @@ export const InfoPanel = forwardRef<InfoPanelHandle, InfoPanelProps>(
 						}}
 					/>
 				</header>
-				<div className="overflow-auto">{children}</div>
+				<div className="flex-1 overflow-y-auto min-h-0 pr-2">{children}</div>
 			</div>
 		);
-	},
+	}
 );
