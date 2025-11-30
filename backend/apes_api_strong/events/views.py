@@ -107,7 +107,7 @@ class EventViewSet(viewsets.ModelViewSet):
         user = request.user
 
         if event.participants.filter(id=user.id).exists():
-            return Response({"detail": "Already participating"}, status=400)
+            return Response({"detail": "Already participating"}, status=200)
 
         event.participants.add(user)
         return Response({"detail": "Joined"}, status=200)
@@ -118,7 +118,7 @@ class EventViewSet(viewsets.ModelViewSet):
         user = request.user
 
         if not event.participants.filter(id=user.id).exists():
-            return Response({"detail": "Not participating"}, status=400)
+            return Response({"detail": "Not participating"}, status=200)
 
         event.participants.remove(user)
         return Response({"detail": "Left"}, status=200)
