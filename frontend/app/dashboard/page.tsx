@@ -9,7 +9,7 @@ import { useRef } from "react";
 export default function DashboardPage() {
   const infoRef = useRef<InfoPanelHandle | null>(null);
   return (
-    <div className="grid grid-cols-2 max-h-screen">
+    <div className="grid grid-cols-[2fr_3fr] max-h-screen">
       <main className="shadow-2xl rounded-xl z-50 bg-white h-screen overflow-y-auto ">
         <header className="flex justify-between items-center w-full sticky top-0 z-1000 bg-white shadow-md px-6 py-4 mb-4">
           <img
@@ -52,19 +52,28 @@ export default function DashboardPage() {
             <h2 className="text-ats-green-500 font-extrabold text-2xl">
               Your events
             </h2>
-            <EventTile
-              event={{
-                id: 1,
-                title: "Sample Event",
-                description: "This is a sample event.",
-                date: "2024-06-01",
-                latitude: 40.7128,
-                longitude: -74.006,
-                location_name: "New York",
-                tags: [1, 2],
-                personality: [1, 2],
-              }}
-            />
+            <div className="flex flex-col gap-2">
+              {[...Array(3)].map((_, index) => (
+                <EventTile
+                  key={index}
+                  event={{
+                    id: 1,
+                    title: "Sample Event",
+                    description: "This is a sample event.",
+                    date: "2024-06-01",
+                    latitude: 40.7128,
+                    longitude: -74.006,
+                    location_name: "New York",
+                    host: "apeUser",
+                    tags: [1, 2],
+                    personality: [1, 2],
+                  }}
+                  onDetailsClick={() => {
+                    console.log("Details clicked");
+                  }}
+                />
+              ))}
+            </div>
           </div>
           <div>
             <h2 className="text-ats-green-500 font-extrabold text-2xl">

@@ -15,6 +15,7 @@ export type eventType = {
   latitude: number;
   longitude: number;
   location_name: string;
+  host: string;
   tags: number[];
   personality: number[];
 };

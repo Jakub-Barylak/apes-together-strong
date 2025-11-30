@@ -5,7 +5,7 @@ export default function ProfileView({ user }: { user: userType }) {
     <div className="grid grid-cols-[1fr_auto] gap-4 items-center h-14">
       <div className="text-right">
         <h2 className="font-extrabold">{user.username}</h2>
-        <h3>Regular Ape</h3>
+        <h3>Ape</h3>
       </div>
       <div className="">
         <img
